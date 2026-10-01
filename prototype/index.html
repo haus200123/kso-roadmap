@@ -1,0 +1,789 @@
+<title>Дорожная карта КСО</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: рабочий инструмент — шапка с разделами, сводка → фильтры → таблица; карточка ТТ выезжает справа */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --surface-2:#f5f7fa; --line:#d9dfe7; --line-2:#e8ecf1;
+  --fg:#15202c; --muted:#5d6b7c; --accent:#1d5bd8; --accent-soft:#e3ebfc; --on-accent:#ffffff;
+  --ok:#1d8656; --ok-soft:#e1f3ea; --warn:#a86a10; --warn-soft:#fbf0dc; --bad:#c23a3a; --bad-soft:#fbe5e5;
+  --teal:#0d7f86; --teal-soft:#dff2f3; --violet:#6c45c9; --violet-soft:#ece6fa; --grey-soft:#e9edf2;
+  --shadow:0 12px 40px rgba(20,32,48,.18);
+  --f-ui:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1319; --surface:#151c24; --surface-2:#1b242e; --line:#2a3542; --line-2:#222c37;
+  --fg:#e5eaf0; --muted:#94a2b3; --accent:#6f9dff; --accent-soft:#1d2c4a; --on-accent:#0b1220;
+  --ok:#4cc38a; --ok-soft:#173327; --warn:#e2a744; --warn-soft:#3a2c14; --bad:#ff7070; --bad-soft:#3d1c1e;
+  --teal:#42c4cb; --teal-soft:#14343a; --violet:#a98bff; --violet-soft:#2a2246; --grey-soft:#222c37;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1319; --surface:#151c24; --surface-2:#1b242e; --line:#2a3542; --line-2:#222c37;
+  --fg:#e5eaf0; --muted:#94a2b3; --accent:#6f9dff; --accent-soft:#1d2c4a; --on-accent:#0b1220;
+  --ok:#4cc38a; --ok-soft:#173327; --warn:#e2a744; --warn-soft:#3a2c14; --bad:#ff7070; --bad-soft:#3d1c1e;
+  --teal:#42c4cb; --teal-soft:#14343a; --violet:#a98bff; --violet-soft:#2a2246; --grey-soft:#222c37;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px}
+
+/* шапка */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em;font-size:15px;white-space:nowrap}
+.brand-mark{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--f-num);font-size:11px;font-weight:600}
+.tabs{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tab{white-space:nowrap}
+@media (max-width:700px){.tabs{order:3;flex:1 1 100%}.top .wrap{gap:8px;justify-content:space-between}}
+.tab{border:0;background:none;padding:7px 12px;border-radius:7px;color:var(--muted);font-weight:500}
+.tab:hover{background:var(--surface-2);color:var(--fg)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.role{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=date],input[type=search],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 9px;min-width:0}
+textarea{width:100%;resize:vertical}
+
+.banner{font-size:12.5px;color:var(--muted);padding-block:10px 0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.banner b{color:var(--fg);font-weight:600}
+.linkbtn{border:0;background:none;color:var(--accent);padding:0;text-decoration:underline;text-underline-offset:2px;font-size:12.5px}
+
+main{padding-block:14px 60px}
+h1{font-size:22px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:16px;margin:0;letter-spacing:-.01em}
+h3{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+
+/* сводка */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.stat .v{font-family:var(--f-num);font-size:22px;font-weight:600;line-height:1.1}
+.stat .l{font-size:12px;color:var(--muted)}
+button.stat:hover{border-color:var(--accent)}
+.stat.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters input[type=search]{flex:1 1 220px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 12px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:10px 12px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+td.r,th.r{text-align:right}
+td.r .sub{white-space:nowrap}
+.addr{font-weight:600}
+.sub{font-size:12px;color:var(--muted)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-none{background:var(--grey-soft);color:var(--muted)}
+.s-prep{background:var(--accent-soft);color:var(--accent)}
+.s-ready{background:var(--teal-soft);color:var(--teal)}
+.s-onsite{background:var(--violet-soft);color:var(--violet)}
+.s-done{background:var(--ok-soft);color:var(--ok)}
+.flag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--bad);margin-top:4px}
+.flag::before{content:"!";display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--bad);color:var(--surface);font-size:10px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:1px 7px;white-space:nowrap;background:var(--surface)}
+.chip.fmt{border-color:transparent;background:var(--surface-2);color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--line-2);overflow:hidden;width:110px;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.due-bad{color:var(--bad);font-weight:600}
+.due-soon{color:var(--warn);font-weight:600}
+
+/* таймлайн */
+.tl{position:relative;min-width:900px}
+.tl-head,.tl-row{display:grid;grid-template-columns:240px 1fr}
+.tl-head{border-bottom:1px solid var(--line);background:var(--surface-2);font-size:11px;color:var(--muted)}
+.tl-name{padding:8px 12px;border-right:1px solid var(--line-2);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-track{position:relative;height:36px}
+.tl-row{border-bottom:1px solid var(--line-2);cursor:pointer}
+.tl-row:hover{background:var(--surface-2)}
+.tl-weeks{position:relative;height:30px}
+.tl-weeks span{position:absolute;top:8px;transform:translateX(4px);white-space:nowrap}
+.tl-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line-2)}
+.tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);opacity:.7;z-index:2}
+.tl-prep{position:absolute;top:13px;height:10px;border-radius:5px;opacity:.35}
+.tl-dot{position:absolute;top:9px;width:18px;height:18px;margin-left:-9px;border-radius:5px;transform:rotate(45deg);border:2px solid var(--surface)}
+.tl-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:10px 12px;border-top:1px solid var(--line)}
+
+/* карточка ТТ */
+.scrim{position:fixed;inset:0;background:rgba(10,16,24,.45);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(860px,100%);background:var(--bg);z-index:41;overflow-y:auto;box-shadow:var(--shadow);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.dr-head{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;gap:12px;align-items:flex-start}
+.dr-head .t{flex:1;min-width:0}
+.x{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px;font-size:18px;line-height:1;flex:none}
+.dr-body{padding:16px 18px 40px;display:flex;flex-direction:column;gap:16px}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.meta label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.meta label > *{color:var(--fg);font-size:14px}
+
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.qbox{border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:8px}
+.qbox h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.q{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.q span{min-width:0}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);flex:none}
+.step button{border:0;background:none;width:30px;height:30px;font-size:16px;color:var(--muted)}
+.step button:hover{color:var(--accent)}
+.step button:disabled{opacity:.3;cursor:default}
+.step input{width:44px;border:0;text-align:center;padding:4px 0;font-family:var(--f-num);background:none;-moz-appearance:textfield}
+.step input::-webkit-inner-spin-button{appearance:none}
+.step.changed{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.orig{font-size:11px;color:var(--accent);font-family:var(--f-num)}
+
+.bal td{padding:7px 10px}
+.bal th{padding:7px 10px}
+.st-ok{color:var(--ok);font-weight:600}
+.st-def{color:var(--bad);font-weight:600}
+.st-exc{color:var(--warn);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:500}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.pri:hover{color:var(--on-accent);filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.issues{display:flex;flex-direction:column;gap:6px}
+.issue{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--warn-soft);color:var(--fg);border-left:3px solid var(--warn)}
+.issue.bad{background:var(--bad-soft);border-left-color:var(--bad)}
+.src{font-size:13px;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px 12px;border:1px dashed var(--line)}
+
+/* чек-лист */
+.ck{display:flex;flex-direction:column}
+.ck-item{display:grid;grid-template-columns:26px 1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);align-items:start}
+.ck-item:last-child{border-bottom:0}
+.box{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;padding:0;margin-top:1px}
+.box.on{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.box.on::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.box.blk{border-color:var(--bad);background:var(--bad-soft)}
+.ck-text{min-width:0}
+.ck-text .tx{font-weight:500}
+.ck-item.done .tx{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.ck-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:3px;align-items:center}
+.ck-meta input[type=number]{width:52px;padding:2px 5px;font-size:12px}
+.ck-meta select{padding:2px 5px;font-size:12px}
+.ck-acts{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ico{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 7px;font-size:12px;color:var(--muted)}
+.ico:hover{color:var(--accent);border-color:var(--accent)}
+.req{color:var(--bad);font-weight:700}
+.ck-group{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:12px 0 4px;display:flex;justify-content:space-between}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.addrow input{flex:1 1 200px}
+.log{font-size:12.5px;display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto}
+.log div{display:grid;grid-template-columns:120px 1fr;gap:10px}
+.inner-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.inner-tabs button{border:0;background:none;padding:8px 12px;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.inner-tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* инженер */
+.eng{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.eng-head{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.eng-head select{font-size:15px;padding:9px}
+.eng-group{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.eng-group > .gh{padding:12px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;background:var(--surface-2);border-bottom:1px solid var(--line-2)}
+.eng-group.locked{opacity:.55}
+.eng-item{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-2)}
+.eng-item:last-child{border-bottom:0}
+.eng-item .box{width:34px;height:34px;border-radius:9px}
+.eng-item .box.on::after{width:8px;height:15px;border-width:0 3px 3px 0}
+.eng-item .tx{font-size:15px;font-weight:500}
+.eng-tools{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.eng-tools .ico{padding:6px 10px;font-size:13px}
+.thumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.eng-close{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.eng-close .btn{width:100%;padding:14px;font-size:16px;border-radius:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:60;font-size:13.5px;max-width:calc(100% - 32px)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .dr-body{padding:12px 12px 40px}.dr-head{padding:12px}
+  .ck-item{grid-template-columns:26px 1fr}.ck-acts{grid-column:2;justify-content:flex-start}
+  .log div{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.drawer.anim{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="brand-mark">КСО</span>Дорожная карта</div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <label class="role">Роль
+      <select id="role">
+        <option value="manager">Менеджер</option>
+        <option value="engineer">Инженер ТП</option>
+        <option value="admin">Администратор</option>
+      </select>
+    </label>
+  </div>
+</header>
+<div class="wrap">
+  <div class="banner"><span><b>Прототип.</b> Адреса, юрлица и количества — из вашей таблицы. Даты выездов, ответственные и отметки в чек-листах — примерные. Изменения сохраняются только в этом браузере.</span><button class="linkbtn" id="reset">Сбросить к данным таблицы</button></div>
+</div>
+<main class="wrap" id="main"></main>
+<div id="drawer-root"></div>
+<div id="toast-root"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- исходные данные из таблицы ---------- */
+const UL = {V:"ООО «Альфа»",P:"ООО «Бета»",L:"ООО «Гамма»",S:"ООО «Дельта»",N:"ООО «Омега»",R:"ООО «Сигма»",PS:"ООО «Каппа»"};
+// [формат, город, адрес, ЮЛ, skit, csik, csikFrom, ncr, demCsik, lin, rTerm, rKkt, rCol, oTerm, oKkt, oFn, oCol, oGaz, прочее[], примечание, исходный комментарий]
+const RAW = [
+ ["Реми","Пилотск","Сосновая, 54","V",8,0,null,4,0,0,4,4,0,4,4,4,8,0,[],"",
+  "1) Необходимо демонтировать 4 NCR, с них снимаем ККТ и терминалы PayDemo для дальнейшего использования.\n2) Запаковываем кассы NCR, делаем фото и передаём логистам для отправки на склад.\n3) Проверяем наличие терминалов PayDemo, а также настроенных ККТ для дополнительных касс (в данном случае 4 терминала и 4 ККТ).\n4) При необходимости демонтируем линейные кассы (в данном случае не требуется).\n5) После физической установки кассы проводим настройку софт-части КСО по инструкциям.\n6) После настройки проверяем полную работоспособность кассы (тесты продажи, маркированного и ЕГАИС-товара, работу ТСПиОТ и его регистрацию, сканеры товаров и бейджей, звук и воспроизведение рекламы).\n7) Итог: демонтированы 4 NCR, установлены и полностью настроены 8 КСО s.kit."],
+ ["Реми","Пилотск","Кедровая, 41В","P",8,0,null,4,0,0,4,4,0,4,4,4,8,0,[],"",""],
+ ["Реми Сити","Демоград","Сосновая, 4","P",4,0,null,4,0,0,4,4,4,0,0,0,4,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 4 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Метки ДемоБанка при замене не заказываем, только для новых. Колонки снимаем с NCR. Закуп 4 колонок для s.kit."],
+ ["Реми","Демоград","Кедровая, 122","V",4,0,null,4,0,0,4,4,0,0,0,0,4,0,[],"","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Метки ДемоБанка при замене не заказываем. Закуп 4 колонок для s.kit."],
+ ["Реми","Демоград","Берёзовая, 117","P",4,0,null,4,0,0,4,4,4,0,0,0,4,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 4 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 4 колонок для s.kit."],
+ ["Реми Сити","Демоград","Рябиновая, 40","L",10,0,null,10,0,0,10,10,10,0,0,0,10,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 10 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 10 колонок для s.kit."],
+ ["Реми","Образцовск","Сосновая, 123","V",4,0,null,4,0,0,4,4,4,0,0,0,4,0,[],"В графе «Установка» указано «4 NCR / 4 s.kit» — уточнить, что ставим. Колонки и снимаем, и закупаем.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 4 колонок для s.kit."],
+ ["Реми","Образцовск","Кедровая, 133","V",4,0,null,4,0,0,4,4,0,0,0,0,0,0,[],"Колонки не указаны: ни «снимаем с NCR», ни закупки — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Метки ДемоБанка при замене не заказываем."],
+ ["Реми","Примерск","Сосновая, 47Г","L",4,0,null,4,0,0,4,4,4,0,0,0,0,0,[],"","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR."],
+ ["Реми","Примерск","Кедровая, 139","S",4,0,null,4,0,0,4,4,4,0,0,0,4,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 4 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 4 колонок для s.kit."],
+ ["Реми Сити","Тестовск","Сосновая, 83","L",6,0,null,6,0,0,6,6,6,0,0,0,6,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 6 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 6 колонок для s.kit."],
+ ["Реми Сити","Макетск","Сосновая, 71","N",8,0,null,8,0,0,8,8,8,0,0,0,8,0,[],"В таблице одновременно «колонки снимаем с NCR» и «закуп 8 колонок для s.kit» — уточнить.","Терминал не нужен — снимаем с NCR. ФР снимаем с NCR. Колонки снимаем с NCR. Закуп 8 колонок для s.kit."],
+ ["Реми Эконом","Контрольск","Сосновая, 112а","V",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми","Демоград","Кленовая, 25в","L",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми Эконом","Образцовск","Берёзовая, 70","R",3,0,null,0,0,0,0,0,0,3,3,3,3,0,[],"",""],
+ ["Реми Эконом","Примерск","Берёзовая, 101","R",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми Эконом","Примерск","Рябиновая, 60","PS",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми","Примерск","Сосновая, 97","S",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми Эконом","Образцовск","Рябиновая, 106а","PS",3,0,null,0,0,0,0,0,0,3,3,3,3,0,[],"",""],
+ ["Реми Эконом","Проектск","Сосновая, 111а","PS",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми Эконом","Эскизск","Сосновая, 17","S",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми Эконом","Модельск","Сосновая, 86а","R",2,0,null,0,0,0,0,0,0,2,2,2,2,0,[],"",""],
+ ["Реми","Демоград","Липовая, 5","L",12,0,null,4,4,2,10,10,0,2,2,4,12,0,[],"Заказано 4 ФН при 2 ККТ. В сводке по ЮЛ учтено 2 «ФН + ККТ» — уточнить.","Снимаем 4 NCR + 4 CSIK + 2 линейные кассы. 4 CSIK переезжают на Еловая, 130."],
+ ["Реми","Демоград","Ясеневая, 74а","P",6,0,null,0,4,0,4,4,0,2,2,2,6,0,[],"Снимаем 4 CSIK, на Эталонск переезжают 3 — одна CSIK без назначения.","Снимаем 4 CSIK. 3 CSIK переезжают в Эталонск, Сосновая, 27а."],
+ ["Реми","Демоград","Ольховая, 26","L",8,0,null,4,0,2,6,6,0,2,2,2,8,0,[],"","Снимаем 4 NCR + 2 линейные кассы."],
+ ["Реми","Демоград","Еловая, 130","L",0,4,"t23",0,0,0,0,0,0,4,4,4,0,4,[],"","4 CSIK, снятые с Липовая, 5."],
+ ["Реми Эконом","Эталонск","Сосновая, 27а","PS",0,3,"t24",0,0,0,0,0,0,3,3,3,0,0,[{name:"Нога столо-ящика (с РЦ)",qty:3}],"","3 CSIK, снятые с ТТ «Ясеневая, 74а»."]
+];
+// сводка по ЮЛ из таблицы (строки 37–44)
+const SHEET = {
+  "ООО «Каппа»":{fk:10,sb:10,sk:7},"ООО «Сигма»":{fk:7,sb:7,sk:7},"ООО «Альфа»":{fk:6,sb:6,sk:22},
+  "ООО «Бета»":{fk:6,sb:6,sk:22},"ООО «Гамма»":{fk:10,sb:10,sk:42},"ООО «Дельта»":{fk:4,sb:4,sk:8},"ООО «Омега»":{fk:null,sb:null,sk:8}
+};
+const MANAGERS=["Менеджер 1","Менеджер 2"];
+const ENGINEERS=["Инженер ТП 1","Инженер ТП 2","Инженер ТП 3"];
+const OFFS=[-3,0,12,7,5,9,14,16,19,21,26,33,20,22,23,27,28,30,34,36,37,40,41,44,47,50,54];
+
+/* ---------- утилиты дат ---------- */
+const DAY=864e5;
+function todayISO(){const d=new Date();return iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()))}
+function iso(d){const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+function pd(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function addD(s,n){return iso(new Date(pd(s).getTime()+n*DAY))}
+function diffD(a,b){return Math.round((pd(a)-pd(b))/DAY)}
+function fd(s){if(!s)return"—";const [y,m,d]=s.split("-");return d+"."+m+"."+y}
+function nowStamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");return fd(iso(d))+" "+p(d.getHours())+":"+p(d.getMinutes())}
+const TODAY=todayISO();
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const plural=(n,a,b,c)=>{n=Math.abs(n)%100;const n1=n%10;if(n>10&&n<20)return c;if(n1>1&&n1<5)return b;if(n1==1)return a;return c};
+
+/* ---------- шаблоны ---------- */
+function prepTemplate(t){
+  const d=derive(t), L=[];
+  const add=(key,text,off,resp,cond=true)=>{if(cond)L.push({key,text,off,resp})};
+  add("p1","Согласовать дату и окно работ с директором ТТ",14,"Менеджер");
+  add("p2",`Подтвердить спецификацию: ${[t.skit?t.skit+" S.kit ("+t.bag+" пакетн. зона)":"",t.csik?t.csik+" CSIK":""].filter(Boolean).join(", ")||"—"}, периферия`,14,"Менеджер");
+  add("p3",`Заказать ${t.skit} КСО S.kit и доставку логистикой`,14,"Менеджер",t.skit>0);
+  add("p3b",`Согласовать перемещение ${t.csik} CSIK с ТТ ${t.csikFrom?ttName(t.csikFrom):"—"}`,14,"Менеджер",t.csik>0);
+  add("p4",`Заказать терминалы PayDemo — ${t.oTerm} шт.`,10,"Менеджер",t.oTerm>0);
+  add("p4b",`Заказать ККТ Новапринт — ${t.oKkt} шт., ФН — ${t.oFn} шт.`,10,"Менеджер",t.oKkt>0||t.oFn>0);
+  add("p4c",`Заказать колонки для S.kit — ${t.oCol} шт.`,10,"Менеджер",t.oCol>0);
+  add("p4d",`Заказать метки ДемоБанка — ${t.oGaz} шт.`,10,"Менеджер",t.oGaz>0);
+  (t.other||[]).forEach((o,i)=>add("p4o"+i,`Заказать: ${o.name} — ${o.qty} шт.`,10,"Менеджер",o.qty>0));
+  add("p5",`Перенастроить фискальные регистраторы с демонтируемых касс — ${t.rKkt} шт.`,7,"Менеджер / ТП",t.rKkt>0);
+  add("p5b",`Зарегистрировать новые ККТ и установить ФН — ${t.oKkt} шт.`,7,"Менеджер / ТП",t.oKkt>0);
+  add("p6",`Подготовить настройки и учётные записи КСО — ${d.kso} шт.`,5,"ТП");
+  add("p7","Проверить сетевую готовность: интернет, розетки, порты",5,"ТП / ТТ");
+  add("p8",`Организовать вывоз демонтируемого оборудования: ${demText(t)}`,3,"Менеджер",d.toWarehouse>0);
+  add("p9","Назначить инженера, передать ему чек-лист и адрес",3,"Менеджер");
+  add("p10","Подтвердить получение КСО и терминалов на ТТ",1,"Менеджер");
+  return L;
+}
+function onsiteTemplate(t){
+  const d=derive(t), G=[];
+  const g=(name,items,cond=true)=>{if(cond)G.push({name,items:items.filter(Boolean)})};
+  const it=(key,text,req=true,photo=false)=>({key,text,req,photo});
+  g("Приезд",[it("o1",`Сверить оборудование с накладной: ${d.kso} КСО, терминалы, ККТ, кабели`),it("o2","Фото до начала работ",true,true)]);
+  g("Демонтаж",[
+    it("o3",`Остановить и вывести из работы: ${demText(t)}`),
+    (t.rTerm||t.rKkt)?it("o4",`Снять ККТ (${t.rKkt}) и терминалы PayDemo (${t.rTerm}) для повторного использования`):null,
+    t.rCol?it("o4b",`Снять колонки с NCR — ${t.rCol} шт.`):null,
+    it("o5","Отключить и демонтировать кассы"),
+    it("o6","Фото освобождённого места",true,true)],d.dem>0);
+  g("Монтаж",[it("o7",`Установить КСО: ${[t.skit?t.skit+" S.kit":"",t.csik?t.csik+" CSIK":""].filter(Boolean).join(", ")}`),it("o8","Подключить питание и сеть, закрепить")]);
+  g("Настройка",[it("o9","Ввести КСО в работу, настроить софт по инструкциям"),it("o10","Подключить фискальный регистратор"),it("o11","Подключить терминал PayDemo"),it("o12","Проверить сканеры (товар и бейджи), весы, печать чека"),it("o13","Звук и воспроизведение рекламы",false)]);
+  g("Проверка",[it("o14","Тестовая продажа картой и наличными"),it("o15","Возврат"),it("o16","Продажа маркированного и ЕГАИС-товара"),it("o17","Работа ТСПиОТ и его регистрация"),it("o18","Сверка итогов, связь с учётной системой")]);
+  g("Сдача",[it("o19","Показать персоналу ТТ, как работает КСО",false),it("o20","Подписать акт"),it("o21","Фото после",true,true)]);
+  g("Вывоз",[it("o22","Упаковать демонтированное оборудование, фото",true,true),it("o23","Передать логистике, подписать акт вывоза")],d.toWarehouse>0);
+  g("Итог",[it("o24","КСО работает: тестовая продажа пройдена")]);
+  return G;
+}
+function demText(t){return [t.ncr?t.ncr+" NCR":"",t.demCsik?t.demCsik+" CSIK":"",t.lin?t.lin+" лин. "+plural(t.lin,"касса","кассы","касс"):""].filter(Boolean).join(", ")||"—"}
+
+/* ---------- модель ---------- */
+function fresh(){
+  const tts=RAW.map((r,i)=>{
+    const [fmt,city,addr,ul,skit,csik,csikFrom,ncr,demCsik,lin,rTerm,rKkt,rCol,oTerm,oKkt,oFn,oCol,oGaz,other,note,src]=r;
+    const t={id:"t"+(i+1),fmt,city,addr,ul:UL[ul],skit,csik,csikFrom,ncr,demCsik,lin,rTerm,rKkt,rCol,oTerm,oKkt,oFn,oCol,oGaz,
+      other:other.map(o=>({...o})),note,src,date:addD(TODAY,OFFS[i]),manager:MANAGERS[["Пилотск","Демоград","Примерск"].includes(city)?0:1],
+      engineer:ENGINEERS[i%3],chk:{},prepEdit:{},custom:[],closed:false,log:[]};
+    t.bag=(ncr>0||fmt==="Реми Сити")?2:1;
+    t.orig=snapshotQty(t);
+    return t;
+  });
+  const byId=Object.fromEntries(tts.map(t=>[t.id,t]));
+  S={tts,byId};
+  // примерные отметки
+  tts.forEach((t,i)=>{
+    const prep=prepItems(t);
+    const mark=(k,dt,by)=>{t.chk[k]={done:true,at:fd(dt),by}};
+    if(i===0){prep.forEach(p=>mark(p.key,p.due,t.manager));onsiteFlat(t).forEach(o=>mark(o.key,t.date,t.engineer));t.closed=true;t.log.push([fd(t.date)+" 17:40",t.engineer+": этап «Работы на месте» закрыт, ТТ завершена"]);return}
+    if(i===1){prep.forEach(p=>mark(p.key,p.due,t.manager));onsiteFlat(t).slice(0,9).forEach(o=>mark(o.key,t.date,t.engineer));t.log.push([fd(t.date)+" 10:15",t.engineer+": начаты работы на месте"]);return}
+    if(i===4){prep.forEach(p=>mark(p.key,p.due,t.manager));t.log.push([fd(addD(t.date,-1))+" 16:00",t.manager+": подготовка завершена"]);return}
+    if(i===3){prep.forEach(p=>{if(p.key!=="p4c"&&p.due<TODAY)mark(p.key,p.due,t.manager)});return}
+    if(i===2){prep.forEach(p=>{if(["p1","p2"].includes(p.key))mark(p.key,p.due,t.manager)});t.chk.p4c={blocked:true,reason:"Поставщик не подтвердил срок поставки колонок"};t.log.push([fd(addD(TODAY,-1))+" 12:05",t.manager+": «Заказать колонки» — заблокировано"]);return}
+    prep.forEach(p=>{if(p.due<TODAY)mark(p.key,p.due,t.manager)});
+  });
+  tts.forEach(t=>t.chk&&Object.entries(t.chk).forEach(([k,v])=>{if(v.done&&k.startsWith("p")&&t.log.length<4)t.log.push([v.at+" 11:00",v.by+": отмечено «"+(prepItems(t).find(p=>p.key===k)||{text:k}).text+"»"])}));
+}
+function snapshotQty(t){return {skit:t.skit,csik:t.csik,ncr:t.ncr,demCsik:t.demCsik,lin:t.lin,rTerm:t.rTerm,rKkt:t.rKkt,rCol:t.rCol,oTerm:t.oTerm,oKkt:t.oKkt,oFn:t.oFn,oCol:t.oCol,oGaz:t.oGaz,bag:t.bag}}
+let S;
+const KEY="kso-roadmap-proto-v2";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S.tts))}catch(e){}}
+function load(){try{const s=localStorage.getItem(KEY);if(s){const tts=JSON.parse(s);if(Array.isArray(tts)&&tts.length===RAW.length){S={tts,byId:Object.fromEntries(tts.map(t=>[t.id,t]))};return}}}catch(e){}fresh()}
+function ttName(id){const t=S.byId[id];return t?t.addr:"—"}
+
+function derive(t){
+  const kso=t.skit+t.csik;
+  const dem=t.ncr+t.demCsik+t.lin;
+  const out=transfersOut(t.id);
+  const toWarehouse=t.ncr+t.lin+Math.max(0,t.demCsik-out);
+  const need={term:kso,kkt:kso,fn:kso,col:t.skit};
+  const reuse={term:t.rTerm,kkt:t.rKkt,fn:t.rKkt,col:t.rCol};
+  const order={term:t.oTerm,kkt:t.oKkt,fn:t.oFn,col:t.oCol};
+  return {kso,dem,toWarehouse,need,reuse,order,out};
+}
+function transfersOut(id){return S.tts.filter(x=>x.csikFrom===id).reduce((a,x)=>a+x.csik,0)}
+const BAL=[["term","Терминал PayDemo"],["kkt","ККТ"],["fn","ФН"],["col","Колонки (S.kit)"]];
+function balance(t){
+  const d=derive(t);
+  return BAL.map(([k,label])=>{const have=d.reuse[k]+d.order[k];return {k,label,need:d.need[k],reuse:d.reuse[k],order:d.order[k],diff:have-d.need[k]}});
+}
+function issues(t){
+  const d=derive(t), L=[];
+  balance(t).forEach(b=>{
+    if(b.diff<0)L.push({bad:true,t:`${b.label}: не хватает ${-b.diff} шт. (нужно ${b.need}, с демонтажа ${b.reuse}, заказ ${b.order})`});
+    else if(b.diff>0)L.push({bad:false,t:`${b.label}: сверх потребности ${b.diff} шт. (нужно ${b.need}, с демонтажа ${b.reuse}, заказ ${b.order})`});
+  });
+  if(t.rTerm>d.dem||t.rKkt>d.dem)L.push({bad:true,t:`С демонтажа берём больше терминалов/ККТ, чем снимаем касс (${d.dem})`});
+  if(t.rCol>t.ncr)L.push({bad:true,t:`Колонок с NCR берём ${t.rCol}, а NCR снимаем ${t.ncr}`});
+  if(t.demCsik>0&&d.out!==t.demCsik)L.push({bad:false,t:`Снимаем ${t.demCsik} CSIK, на другие ТТ переезжает ${d.out}`+(d.out<t.demCsik?` — ${t.demCsik-d.out} без назначения`:"")});
+  if(t.csik>0&&t.csikFrom){const src=S.byId[t.csikFrom];const avail=src.demCsik-transfersOut(src.id)+t.csik;if(t.csik>avail)L.push({bad:true,t:`На ${src.addr} снимается только ${src.demCsik} CSIK — не хватает для переноса`})}
+  if(t.note)L.push({bad:false,t:t.note,src:true});
+  return L;
+}
+function prepItems(t){
+  const base=prepTemplate(t).filter(p=>!(t.prepEdit[p.key]||{}).removed).map(p=>{const e=t.prepEdit[p.key]||{};return {...p,off:e.off??p.off,resp:e.resp??p.resp}});
+  t.custom.forEach(c=>base.push({key:c.key,text:c.text,off:c.off,resp:c.resp,custom:true}));
+  base.sort((a,b)=>b.off-a.off);
+  base.forEach(p=>p.due=addD(t.date,-p.off));
+  return base;
+}
+function onsiteFlat(t){return onsiteTemplate(t).flatMap(g=>g.items)}
+function info(t){
+  const prep=prepItems(t), on=onsiteFlat(t), c=t.chk;
+  const pd_=prep.filter(p=>c[p.key]?.done).length, od=on.filter(o=>c[o.key]?.done).length;
+  const overdue=prep.filter(p=>!c[p.key]?.done&&p.due<TODAY);
+  const blocked=prep.filter(p=>c[p.key]?.blocked);
+  const next=prep.filter(p=>!c[p.key]?.done).sort((a,b)=>a.due<b.due?-1:1)[0];
+  let st="none";
+  if(t.closed)st="done";else if(od>0)st="onsite";else if(pd_===prep.length)st="ready";else if(pd_>0)st="prep";
+  const iss=issues(t);
+  const problem=blocked.length>0||overdue.length>0||iss.some(i=>i.bad);
+  const pct=Math.round(100*(pd_+od)/(prep.length+on.length));
+  return {prep,on,pd:pd_,od,overdue,blocked,next,st,problem,pct,iss};
+}
+const ST={none:"Не начато",prep:"Подготовка",ready:"Готово к выезду",onsite:"Работы на месте",done:"Завершено"};
+const STC={none:"var(--muted)",prep:"var(--accent)",ready:"var(--teal)",onsite:"var(--violet)",done:"var(--ok)"};
+function works(t){
+  const d=derive(t),w=[];
+  if(d.dem)w.push("Демонтаж: "+demText(t));
+  if(t.skit)w.push("Установка "+t.skit+" S.kit");
+  if(t.csik)w.push("Перенос "+t.csik+" CSIK");
+  if(t.rKkt||t.oKkt)w.push("Фискальные регистраторы");
+  if(d.kso)w.push("Терминалы PayDemo");
+  if(d.toWarehouse)w.push("Вывоз оборудования");
+  return w;
+}
+function logIt(t,msg){t.log.unshift([nowStamp(),roleName()+": "+msg]);}
+function roleName(){return {manager:"Менеджер",engineer:"Инженер ТП",admin:"Администратор"}[UI.role]}
+
+/* ---------- UI-состояние ---------- */
+const UI={view:"map",mode:"table",role:"manager",q:"",fSt:"",fUl:"",fFmt:"",fMgr:"",quick:"",open:null,cardTab:"prep",engTT:null,from:"",to:""};
+try{const v=localStorage.getItem(KEY+"-ui");if(v)Object.assign(UI,JSON.parse(v),{open:null})}catch(e){}
+function saveUI(){try{localStorage.setItem(KEY+"-ui",JSON.stringify({view:UI.view,mode:UI.mode,role:UI.role}))}catch(e){}}
+
+const $=s=>document.querySelector(s);
+function toast(m){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",2600)}
+
+const VIEWS=[["map","Дорожная карта"],["order","Заказ по ЮЛ"],["move","Перемещения и вывоз"],["eng","Режим инженера"],["dict","Справочник"]];
+function renderTabs(){
+  $("#tabs").innerHTML=VIEWS.filter(([k])=>k!=="dict"||UI.role==="admin").map(([k,l])=>`<button class="tab" role="tab" data-view="${k}" aria-selected="${UI.view===k}">${l}</button>`).join("");
+  $("#role").value=UI.role;
+}
+function render(){renderTabs();const m=$("#main");
+  if(UI.view==="map")m.innerHTML=viewMap();
+  else if(UI.view==="order")m.innerHTML=viewOrder();
+  else if(UI.view==="move")m.innerHTML=viewMove();
+  else if(UI.view==="eng")m.innerHTML=viewEng();
+  else m.innerHTML=viewDict();
+  renderDrawer();
+}
+
+/* ---------- дорожная карта ---------- */
+function filtered(){
+  const q=UI.q.trim().toLowerCase();
+  return S.tts.map(t=>({t,i:info(t)})).filter(({t,i})=>{
+    if(q&&!(t.addr+" "+t.city+" "+t.ul+" "+t.fmt).toLowerCase().includes(q))return false;
+    if(UI.fSt&&i.st!==UI.fSt)return false;
+    if(UI.fUl&&t.ul!==UI.fUl)return false;
+    if(UI.fFmt&&t.fmt!==UI.fFmt)return false;
+    if(UI.fMgr&&t.manager!==UI.fMgr)return false;
+    if(UI.from&&t.date<UI.from)return false;
+    if(UI.to&&t.date>UI.to)return false;
+    if(UI.quick==="problem"&&!i.problem)return false;
+    if(UI.quick==="overdue"&&!i.overdue.length)return false;
+    if(UI.quick==="week"&&!(t.date>=TODAY&&diffD(t.date,TODAY)<=7))return false;
+    return true;
+  }).sort((a,b)=>a.t.date<b.t.date?-1:a.t.date>b.t.date?1:0);
+}
+function viewMap(){
+  const all=S.tts.map(t=>({t,i:info(t)}));
+  const kso=S.tts.reduce((a,t)=>a+t.skit+t.csik,0);
+  const done=all.filter(x=>x.i.st==="done").length;
+  const prob=all.filter(x=>x.i.problem).length;
+  const od=all.reduce((a,x)=>a+x.i.overdue.length,0);
+  const wk=all.filter(x=>x.t.date>=TODAY&&diffD(x.t.date,TODAY)<=7).length;
+  const rows=filtered();
+  const opt=(arr,v)=>arr.map(a=>`<option value="${esc(a)}" ${a===v?"selected":""}>${esc(a)}</option>`).join("");
+  const uls=[...new Set(S.tts.map(t=>t.ul))];
+  const st=(k,v,l)=>`<button class="stat ${UI.quick===k?"on":""}" data-quick="${k}"><span class="v num">${v}</span><span class="l">${l}</span></button>`;
+  return `
+  <div class="head-row"><div><h1>Установка КСО по торговым точкам</h1><div class="sub">${S.tts.length} ТТ · ${kso} КСО · обновлено ${fd(TODAY)}</div></div>
+  <div class="seg" role="group" aria-label="Вид"><button data-mode="table" aria-pressed="${UI.mode==="table"}">Таблица</button><button data-mode="tl" aria-pressed="${UI.mode==="tl"}">Таймлайн</button></div></div>
+  <div class="stats">
+    ${st("","<span>"+done+"</span><span class='muted' style='font-size:14px'> / "+S.tts.length+"</span>","ТТ завершено")}
+    ${st("week",wk,"выездов за 7 дней")}
+    ${st("overdue",od,"просроченных пунктов")}
+    ${st("problem",prob,"ТТ с проблемами")}
+    <div class="stat"><span class="v num">${kso}</span><span class="l">КСО к установке</span></div>
+  </div>
+  <div class="filters">
+    <input type="search" id="f-q" placeholder="Поиск по адресу, городу, юрлицу" value="${esc(UI.q)}" aria-label="Поиск">
+    <select id="f-st" aria-label="Статус"><option value="">Все статусы</option>${Object.entries(ST).map(([k,l])=>`<option value="${k}" ${UI.fSt===k?"selected":""}>${l}</option>`).join("")}</select>
+    <select id="f-ul" aria-label="Юрлицо"><option value="">Все юрлица</option>${opt(uls,UI.fUl)}</select>
+    <select id="f-fmt" aria-label="Формат"><option value="">Все форматы</option>${opt(["Реми","Реми Сити","Реми Эконом"],UI.fFmt)}</select>
+    <select id="f-mgr" aria-label="Менеджер"><option value="">Все менеджеры</option>${opt(MANAGERS,UI.fMgr)}</select>
+    <input type="date" id="f-from" value="${UI.from}" aria-label="Выезд с">
+    <input type="date" id="f-to" value="${UI.to}" aria-label="Выезд по">
+  </div>
+  ${UI.mode==="table"?mapTable(rows):timeline(rows)}`;
+}
+function mapTable(rows){
+  if(!rows.length)return `<div class="panel empty">Под фильтры не попала ни одна ТТ.</div>`;
+  return `<div class="panel scroll"><table><thead><tr><th>Торговая точка</th><th>Юрлицо</th><th>Работы</th><th>На месте</th><th>Статус</th><th>Прогресс</th><th>Ближайший срок</th></tr></thead><tbody>
+  ${rows.map(({t,i})=>{
+    const nx=i.next;let due="—",cls="";
+    if(t.closed)due="—";else if(nx){const dd=diffD(nx.due,TODAY);cls=dd<0?"due-bad":dd<=2?"due-soon":"";due=`<span class="${cls}">${fd(nx.due)}</span><div class="sub">${esc(nx.text.length>48?nx.text.slice(0,46)+"…":nx.text)}</div>`}
+    else if(i.st==="onsite"||i.st==="ready")due=`<span class="sub">чек-лист инженера</span>`;
+    return `<tr class="click" data-open="${t.id}" tabindex="0">
+      <td style="min-width:220px"><div class="addr">${esc(t.addr)}</div><div class="sub">${esc(t.city)} · <span class="chip fmt">${esc(t.fmt)}</span></div></td>
+      <td class="sub" style="white-space:nowrap">${esc(t.ul.replace("ООО ",""))}</td>
+      <td style="min-width:200px"><div class="chips">${works(t).map(w=>`<span class="chip">${esc(w)}</span>`).join("")}</div></td>
+      <td class="num" style="white-space:nowrap">${fd(t.date)}</td>
+      <td><span class="pill s-${i.st}">${ST[i.st]}</span>${i.problem?`<div class="flag">${i.blocked.length?"Заблокировано":i.overdue.length?"Просрочка":"Баланс оборудования"}</div>`:""}</td>
+      <td><span class="num">${i.pct}%</span><div class="bar"><i style="width:${i.pct}%"></i></div></td>
+      <td style="min-width:170px">${due}</td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+function timeline(rows){
+  if(!rows.length)return `<div class="panel empty">Под фильтры не попала ни одна ТТ.</div>`;
+  const dates=rows.map(r=>r.t.date);
+  let start=addD(dates.reduce((a,b)=>a<b?a:b),-16);if(TODAY<start)start=addD(TODAY,-3);
+  let end=addD(dates.reduce((a,b)=>a>b?a:b),5);if(TODAY>end)end=addD(TODAY,3);
+  // выравнивание на понедельник
+  const sd=pd(start);start=addD(start,-((sd.getDay()+6)%7));
+  const span=diffD(end,start)+1;
+  const pct=s=>(diffD(s,start)/span*100);
+  const weeks=[];for(let s=start;s<=end;s=addD(s,7))weeks.push(s);
+  const grid=weeks.map(w=>`<div class="tl-grid" style="left:${pct(w)}%"></div>`).join("");
+  const today=`<div class="tl-today" style="left:${pct(TODAY)}%" title="Сегодня"></div>`;
+  return `<div class="panel scroll"><div class="tl">
+   <div class="tl-head"><div class="tl-name">ТТ · дата выезда</div><div class="tl-weeks">${weeks.map(w=>`<span style="left:${pct(w)}%">${fd(w).slice(0,5)}</span>`).join("")}</div></div>
+   ${rows.map(({t,i})=>{const c=STC[i.st];const ps=addD(t.date,-14);
+     return `<div class="tl-row" data-open="${t.id}" tabindex="0"><div class="tl-name"><b>${esc(t.addr)}</b> <span class="muted">· ${esc(t.city)} · ${fd(t.date).slice(0,5)}</span></div>
+     <div class="tl-track">${grid}${today}<div class="tl-prep" style="left:${pct(ps)}%;width:${14/span*100}%;background:${c}"></div><div class="tl-dot" style="left:${pct(t.date)+.5/span*100}%;background:${c}" title="${fd(t.date)} · ${ST[i.st]}"></div>${i.problem?`<div style="position:absolute;top:9px;left:calc(${pct(t.date)}% + 14px)" class="flag" title="Есть проблема"></div>`:""}</div></div>`}).join("")}
+  </div>
+  <div class="tl-legend"><span>▬ подготовка (Д-14 … Д)</span><span>◆ работы на месте</span>${Object.entries(ST).map(([k,l])=>`<span><span class="pill s-${k}">${l}</span></span>`).join("")}<span style="color:var(--bad)">┃ сегодня</span></div></div>`;
+}
+
+/* ---------- заказ по ЮЛ ---------- */
+function orderRows(){
+  const by={};
+  S.tts.forEach(t=>{const r=by[t.ul]||(by[t.ul]={ul:t.ul,tt:0,sk:0,sk1:0,sk2:0,cs:0,term:0,kkt:0,fn:0,col:0,gaz:0,other:{}});
+    r.tt++;r.sk+=t.skit;if(t.bag===1)r.sk1+=t.skit;else r.sk2+=t.skit;r.cs+=t.csik;r.term+=t.oTerm;r.kkt+=t.oKkt;r.fn+=t.oFn;r.col+=t.oCol;r.gaz+=t.oGaz;(t.other||[]).forEach(o=>r.other[o.name]=(r.other[o.name]||0)+o.qty)});
+  return Object.values(by).sort((a,b)=>b.sk-a.sk);
+}
+function cmp(v,ref){if(ref==null)return "";return v===ref?`<div class="sub st-ok">✓ как в таблице</div>`:`<div class="sub st-def">в таблице ${ref}</div>`}
+function viewOrder(){
+  const R=orderRows();const T=R.reduce((a,r)=>{["tt","sk","sk1","sk2","cs","term","kkt","fn","col","gaz"].forEach(k=>a[k]=(a[k]||0)+r[k]);return a},{});
+  const defs=S.tts.map(t=>({t,b:balance(t).filter(b=>b.diff!==0)})).filter(x=>x.b.length);
+  return `<div class="head-row"><div><h1>Заказ оборудования по юрлицам</h1><div class="sub">Считается из количеств в карточках ТТ. Измените количество на ТТ — сводка пересчитается.</div></div>
+  <button class="btn" data-act="copy-order">Скопировать для Excel</button></div>
+  <div class="panel scroll"><table><thead><tr><th>Юрлицо</th><th class="r">ТТ</th><th class="r">S.kit</th><th class="r">из них 1 / 2 пакетн.</th><th class="r">CSIK (перенос)</th><th class="r">Терминалы PayDemo</th><th class="r">ККТ</th><th class="r">ФН</th><th class="r">Колонки</th><th class="r">Метки ДемоБанка</th><th>Прочее</th></tr></thead><tbody>
+  ${R.map(r=>{const s=SHEET[r.ul]||{};return `<tr><td><b>${esc(r.ul)}</b></td><td class="r num">${r.tt}</td>
+   <td class="r num">${r.sk}${cmp(r.sk,s.sk)}</td><td class="r num">${r.sk1} / ${r.sk2}</td><td class="r num">${r.cs||"—"}</td>
+   <td class="r num">${r.term}${cmp(r.term,s.sb)}</td><td class="r num">${r.kkt}${cmp(r.kkt,s.fk)}</td><td class="r num">${r.fn}${s.fk!=null&&r.fn!==s.fk?`<div class="sub st-exc">≠ ККТ в таблице (${s.fk})</div>`:""}</td>
+   <td class="r num">${r.col}</td><td class="r num">${r.gaz||"—"}</td><td class="sub">${Object.entries(r.other).map(([k,v])=>esc(k)+": "+v).join("<br>")||"—"}</td></tr>`}).join("")}
+  <tr><td><b>Итого</b></td><td class="r num"><b>${T.tt}</b></td><td class="r num"><b>${T.sk}</b></td><td class="r num">${T.sk1} / ${T.sk2}</td><td class="r num">${T.cs}</td><td class="r num"><b>${T.term}</b></td><td class="r num"><b>${T.kkt}</b></td><td class="r num"><b>${T.fn}</b></td><td class="r num"><b>${T.col}</b></td><td class="r num">${T.gaz}</td><td></td></tr>
+  </tbody></table></div>
+  <p class="sub" style="max-width:80ch">«Как в таблице» сверяет со сводкой внизу вашего листа (ФН + ККТ, PayDemo, S.kit). Пакетная зона S.kit проставлена по правилу из ячейки F4: замена NCR или формат Реми Сити — 2, новая КСО не в Реми Сити — 1. Её можно поменять в карточке ТТ.</p>
+  <div class="head-row" style="margin-top:22px"><h2>Расхождения в балансе по ТТ</h2><button class="btn" data-act="align-all" ${UI.role==="engineer"?"disabled":""}>Выровнять заказ на всех ТТ</button></div>
+  ${defs.length?`<div class="panel scroll"><table><thead><tr><th>ТТ</th><th>Позиция</th><th class="r">Нужно</th><th class="r">С демонтажа</th><th class="r">Заказ</th><th class="r">Итог</th></tr></thead><tbody>
+   ${defs.flatMap(({t,b})=>b.map((x,j)=>`<tr class="click" data-open="${t.id}">${j===0?`<td rowspan="${b.length}"><div class="addr">${esc(t.addr)}</div><div class="sub">${esc(t.city)}</div></td>`:""}<td>${x.label}</td><td class="r num">${x.need}</td><td class="r num">${x.reuse}</td><td class="r num">${x.order}</td><td class="r num ${x.diff<0?"st-def":"st-exc"}">${x.diff>0?"+":""}${x.diff}</td></tr>`)).join("")}
+  </tbody></table></div>`:`<div class="panel empty">Баланс сходится на всех ТТ.</div>`}`;
+}
+function orderTSV(){
+  const R=orderRows();const h=["Юрлицо","ТТ","S.kit","S.kit 1 пакетн.","S.kit 2 пакетн.","CSIK перенос","Терминалы PayDemo","ККТ","ФН","Колонки","Метки ДемоБанка"];
+  return [h.join("\t"),...R.map(r=>[r.ul,r.tt,r.sk,r.sk1,r.sk2,r.cs,r.term,r.kkt,r.fn,r.col,r.gaz].join("\t"))].join("\n");
+}
+
+/* ---------- перемещения ---------- */
+function viewMove(){
+  const tr=S.tts.filter(t=>t.csik>0&&t.csikFrom);
+  const srcs=S.tts.filter(t=>t.demCsik>0);
+  const wh=S.tts.filter(t=>derive(t).toWarehouse>0);
+  const sum=k=>wh.reduce((a,t)=>a+t[k],0);
+  return `<div class="head-row"><div><h1>Перемещения и вывоз</h1><div class="sub">Что переезжает между ТТ и что уходит логистам на склад.</div></div></div>
+  <div class="two">
+  <section class="sec"><div class="sec-h"><h2>Перенос CSIK между ТТ</h2></div>
+   <table><thead><tr><th>Откуда</th><th class="r">Снимаем</th><th>Куда</th><th class="r">Ставим</th><th class="r">Остаток</th></tr></thead><tbody>
+   ${srcs.map(s=>{const outs=S.tts.filter(t=>t.csikFrom===s.id);const left=s.demCsik-outs.reduce((a,t)=>a+t.csik,0);
+     return `<tr class="click" data-open="${s.id}"><td><div class="addr">${esc(s.addr)}</div><div class="sub">${fd(s.date)}</div></td><td class="r num">${s.demCsik}</td>
+     <td>${outs.map(o=>`<div>${esc(o.addr)} <span class="sub">${esc(o.city)}, ${fd(o.date)}</span>${o.date<s.date?` <span class="st-def sub">раньше демонтажа</span>`:""}</div>`).join("")||"—"}</td>
+     <td class="r num">${outs.map(o=>o.csik).join("<br>")||"—"}</td><td class="r num ${left?"st-exc":"st-ok"}">${left?left+" без назначения":"0"}</td></tr>`}).join("")}
+   </tbody></table>
+   <p class="sub">Если ТТ-получатель стоит в графике раньше ТТ-источника, строка подсвечивается: CSIK ещё не будут сняты.</p>
+  </section>
+  <section class="sec"><div class="sec-h"><h2>Вывоз на склад</h2><span class="sub num">${sum("ncr")} NCR · ${sum("lin")} лин. касс</span></div>
+   <table><thead><tr><th>ТТ</th><th class="r">NCR</th><th class="r">Лин. кассы</th><th class="r">CSIK</th><th>Дата</th></tr></thead><tbody>
+   ${wh.map(t=>{const d=derive(t);return `<tr class="click" data-open="${t.id}"><td><div class="addr">${esc(t.addr)}</div><div class="sub">${esc(t.city)}</div></td><td class="r num">${t.ncr||"—"}</td><td class="r num">${t.lin||"—"}</td><td class="r num">${Math.max(0,t.demCsik-d.out)||"—"}</td><td class="num">${fd(t.date)}</td></tr>`}).join("")}
+   </tbody></table></section></div>`;
+}
+
+/* ---------- справочник ---------- */
+function viewDict(){
+  const sample=S.tts[0];
+  return `<div class="head-row"><div><h1>Справочник работ и шаблонов</h1><div class="sub">В рабочей версии шаблоны редактирует администратор. Здесь показаны пункты для ТТ ${esc(sample.addr)}: текст подставляет количества из карточки.</div></div></div>
+  <div class="two"><section class="sec"><h2>Подготовка — сроки от даты работ (Д)</h2><div class="ck">${prepTemplate(sample).map(p=>`<div class="ck-item"><span class="num muted">Д-${p.off}</span><div class="ck-text"><div class="tx">${esc(p.text)}</div><div class="ck-meta">${esc(p.resp)}</div></div><span></span></div>`).join("")}</div></section>
+  <section class="sec"><h2>Работы на месте</h2>${onsiteTemplate(sample).map(g=>`<div class="ck-group">${g.name}</div>${g.items.map(i=>`<div class="sub" style="padding:3px 0">${i.req?'<span class="req">*</span> ':''}${esc(i.text)}${i.photo?" · фото":""}</div>`).join("")}`).join("")}</section></div>
+  <section class="sec" style="margin-top:16px"><h2>Типы работ</h2><div class="chips">${["Демонтаж кассы","Установка КСО","Перенос CSIK","Перенастройка фискального регистратора","Подключение терминала PayDemo","Сетевая подготовка","Вывоз оборудования"].map(x=>`<span class="chip">${x}</span>`).join("")}</div></section>`;
+}
+
+/* ---------- режим инженера ---------- */
+function viewEng(){
+  const cand=S.tts.slice().sort((a,b)=>Math.abs(diffD(a.date,TODAY))-Math.abs(diffD(b.date,TODAY)));
+  if(!UI.engTT)UI.engTT=(cand.find(t=>!t.closed)||cand[0]).id;
+  const t=S.byId[UI.engTT];const i=info(t);
+  const groups=onsiteTemplate(t);const c=t.chk;
+  const req=i.on.filter(o=>o.req);const reqDone=req.filter(o=>c[o.key]?.done).length;
+  const canClose=reqDone===req.length&&!t.closed;
+  return `<div class="eng">
+   <div class="eng-head">
+    <label class="sub" for="eng-tt">Торговая точка</label>
+    <select id="eng-tt">${cand.map(x=>`<option value="${x.id}" ${x.id===t.id?"selected":""}>${fd(x.date).slice(0,5)} · ${esc(x.city)}, ${esc(x.addr)}</option>`).join("")}</select>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="pill s-${i.st}">${ST[i.st]}</span><span class="num sub">обязательных ${reqDone}/${req.length}</span></div>
+    <div class="bar" style="width:100%"><i style="width:${Math.round(100*reqDone/req.length)}%"></i></div>
+    ${i.pd<i.prep.length?`<div class="issue">Подготовка не завершена: ${i.prep.length-i.pd} ${plural(i.prep.length-i.pd,"пункт","пункта","пунктов")} у менеджера.</div>`:""}
+   </div>
+   ${groups.map((g,gi)=>{const prevOpen=groups.slice(0,gi).every(pg=>pg.items.filter(x=>x.req).every(x=>c[x.key]?.done));const gd=g.items.filter(x=>c[x.key]?.done).length;
+     return `<section class="eng-group ${prevOpen||t.closed?"":"locked"}"><div class="gh"><span>${gi+1}. ${g.name}</span><span class="num sub">${gd}/${g.items.length}</span></div>
+     ${g.items.map(it=>{const s=c[it.key]||{};return `<div class="eng-item"><button class="box ${s.done?"on":""}" data-eng="${it.key}" ${(!prevOpen||t.closed)?"disabled":""} aria-label="${s.done?"Снять отметку":"Отметить"}: ${esc(it.text)}"></button>
+      <div><div class="tx">${it.req?'<span class="req">*</span> ':''}${esc(it.text)}</div>
+      ${s.done?`<div class="sub">${esc(s.by||"")} · ${esc(s.at||"")}</div>`:""}
+      ${s.comment?`<div class="sub">💬 ${esc(s.comment)}</div>`:""}
+      ${s.photo?`<img class="thumb" src="${s.photo}" alt="Фото: ${esc(it.text)}" style="margin-top:6px">`:""}
+      ${it.photo&&!s.photo?`<div class="sub st-exc">Нужно фото</div>`:""}
+      <div class="eng-tools"><label class="ico">📷 Фото<input type="file" accept="image/*" data-photo="${it.key}" hidden></label><button class="ico" data-cmt="${it.key}">Комментарий</button></div>
+      ${UI.cmt===it.key?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px"><textarea id="cmt-text" rows="2">${esc(s.comment||"")}</textarea><button class="btn sm" data-cmt-save="${it.key}">Сохранить</button></div>`:""}
+      </div></div>`}).join("")}</section>`}).join("")}
+   <div class="eng-close"><button class="btn pri" data-act="close-stage" ${canClose?"":"disabled"}>${t.closed?"Этап закрыт · ТТ завершена":canClose?"Закрыть этап":"Закрыть этап — осталось "+(req.length-reqDone)+" обяз."}</button></div>
+  </div>`;
+}
+
+/* ---------- карточка ТТ ---------- */
+function stepper(t,f,label,max){
+  const v=t[f],o=t.orig[f],ro=UI.role==="engineer";
+  return `<div class="q"><span>${label}${o!==v?` <span class="orig">было ${o}</span>`:""}</span><span class="step ${o!==v?"changed":""}"><button data-dec="${f}" ${ro||v<=0?"disabled":""} aria-label="Меньше">−</button><input type="number" min="0" ${max?`max="${max}"`:""} value="${v}" data-qty="${f}" ${ro?"disabled":""} aria-label="${esc(label)}"><button data-inc="${f}" ${ro?"disabled":""} aria-label="Больше">+</button></span></div>`;
+}
+function renderDrawer(){
+  const root=$("#drawer-root");
+  if(!UI.open){root.innerHTML="";return}
+  const t=S.byId[UI.open];const i=info(t);const d=derive(t);const ro=UI.role==="engineer";
+  const scroll=root.querySelector(".drawer")?.scrollTop||0;
+  const bal=balance(t);
+  const csikSrc=S.tts.filter(x=>x.demCsik>0&&x.id!==t.id);
+  root.innerHTML=`<div class="scrim" data-act="close"></div>
+  <aside class="drawer${UI.anim?" anim":""}" role="dialog" aria-modal="true" aria-label="Карточка ТТ">
+   <div class="dr-head"><div class="t"><div class="sub">${esc(t.fmt)} · ${esc(t.city)} · ${esc(t.ul)}</div><h2 style="font-size:19px">${esc(t.addr)}</h2>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap"><span class="pill s-${i.st}">${ST[i.st]}</span><span class="num sub">${i.pct}% · ${d.kso} КСО</span>${i.problem?`<span class="flag">Есть проблема</span>`:""}</div></div>
+    <button class="x" data-act="close" aria-label="Закрыть">×</button></div>
+   <div class="dr-body">
+    <section class="sec"><div class="meta">
+     <label>Дата работ на месте (Д)<input type="date" id="c-date" value="${t.date}" ${ro?"disabled":""}></label>
+     <label>Менеджер<select id="c-mgr" ${ro?"disabled":""}>${MANAGERS.map(m=>`<option ${m===t.manager?"selected":""}>${m}</option>`).join("")}</select></label>
+     <label>Инженер ТП<select id="c-eng" ${ro?"disabled":""}>${ENGINEERS.map(m=>`<option ${m===t.engineer?"selected":""}>${m}</option>`).join("")}</select></label>
+     <label>Работы<span class="chips">${works(t).map(w=>`<span class="chip">${esc(w)}</span>`).join("")}</span></label>
+    </div></section>
+
+    <section class="sec"><div class="sec-h"><h3>Кассы и оборудование</h3>${ro?`<span class="sub">Изменять может менеджер</span>`:`<button class="btn sm" data-act="reset-qty">Вернуть как в таблице</button>`}</div>
+     <div class="qgrid">
+      <div class="qbox"><h4>Устанавливаем</h4>${stepper(t,"skit","КСО S.kit")}
+       <div class="q"><span>Пакетная зона S.kit</span><span class="seg"><button data-bag="1" aria-pressed="${t.bag===1}" ${ro?"disabled":""}>1</button><button data-bag="2" aria-pressed="${t.bag===2}" ${ro?"disabled":""}>2</button></span></div>
+       ${stepper(t,"csik","CSIK (перенос)")}
+       ${t.csik>0?`<div class="q"><span>CSIK снимаем с</span><select id="c-from" ${ro?"disabled":""}><option value="">— выберите ТТ —</option>${csikSrc.map(x=>`<option value="${x.id}" ${x.id===t.csikFrom?"selected":""}>${esc(x.addr)} (${x.demCsik})</option>`).join("")}</select></div>`:""}
+      </div>
+      <div class="qbox"><h4>Демонтируем</h4>${stepper(t,"ncr","NCR")}${stepper(t,"demCsik","CSIK")}${stepper(t,"lin","Линейные кассы")}
+       <div class="sub">На склад: <span class="num">${d.toWarehouse}</span>${d.out?` · на другие ТТ: <span class="num">${d.out}</span> CSIK`:""}</div></div>
+      <div class="qbox"><h4>Берём с демонтажа</h4>${stepper(t,"rTerm","Терминалы PayDemo")}${stepper(t,"rKkt","ККТ (с ФН)")}${stepper(t,"rCol","Колонки с NCR")}</div>
+      <div class="qbox"><h4>Заказываем</h4>${stepper(t,"oTerm","Терминалы PayDemo")}${stepper(t,"oKkt","ККТ Новапринт")}${stepper(t,"oFn","ФН")}${stepper(t,"oCol","Колонки")}${stepper(t,"oGaz","Метки ДемоБанка")}
+       ${(t.other||[]).map((o,k)=>`<div class="q"><span>${esc(o.name)}</span><span class="num">${o.qty}</span></div>`).join("")}</div>
+     </div>
+     <div class="scroll"><table class="bal"><thead><tr><th>Позиция</th><th class="r">Нужно</th><th class="r">С демонтажа</th><th class="r">Заказ</th><th class="r">Итог</th></tr></thead><tbody>
+      ${bal.map(b=>`<tr><td>${b.label}</td><td class="r num">${b.need}</td><td class="r num">${b.reuse}</td><td class="r num">${b.order}</td><td class="r num ${b.diff<0?"st-def":b.diff>0?"st-exc":"st-ok"}">${b.diff===0?"✓":(b.diff>0?"+":"")+b.diff}</td></tr>`).join("")}
+     </tbody></table></div>
+     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" data-act="align" ${ro||bal.every(b=>b.diff===0)?"disabled":""}>Выровнять заказ под потребность</button><span class="sub">Заказ = нужно − снимаем с демонтажа. ФН идёт вместе с перенесённой ККТ.</span></div>
+     ${i.iss.length?`<div class="issues">${i.iss.map(x=>`<div class="issue ${x.bad?"bad":""}">${x.src?"<b>Из таблицы:</b> ":""}${esc(x.t)}</div>`).join("")}</div>`:""}
+    </section>
+
+    <section class="sec">
+     <div class="inner-tabs" role="tablist"><button data-ctab="prep" aria-selected="${UI.cardTab==="prep"}">Подготовка <span class="num muted">${i.pd}/${i.prep.length}</span></button><button data-ctab="on" aria-selected="${UI.cardTab==="on"}">Работы на месте <span class="num muted">${i.od}/${i.on.length}</span></button><button data-ctab="src" aria-selected="${UI.cardTab==="src"}">Пометки</button><button data-ctab="log" aria-selected="${UI.cardTab==="log"}">Журнал</button></div>
+     ${UI.cardTab==="prep"?prepList(t,i):UI.cardTab==="on"?onList(t):UI.cardTab==="src"?`<div class="src">${esc(t.src||"В таблице для этой ТТ комментария нет.")}</div>`:`<div class="log">${t.log.length?t.log.map(([a,b])=>`<div><span class="num muted">${esc(a)}</span><span>${esc(b)}</span></div>`).join(""):`<span class="muted">Пока пусто</span>`}</div>`}
+    </section>
+   </div></aside>`;
+  root.querySelector(".drawer").scrollTop=scroll;UI.anim=false;
+}
+function prepList(t,i){
+  const c=t.chk,ro=UI.role==="engineer";
+  return `<div class="ck">${i.prep.map(p=>{const s=c[p.key]||{};const dd=diffD(p.due,TODAY);const over=!s.done&&dd<0;
+   return `<div class="ck-item ${s.done?"done":""}"><button class="box ${s.done?"on":s.blocked?"blk":""}" data-chk="${p.key}" ${ro?"disabled":""} aria-label="Отметить"></button>
+   <div class="ck-text"><div class="tx">${esc(p.text)}</div>
+    <div class="ck-meta"><span>Д-</span><input type="number" min="0" max="60" value="${p.off}" data-off="${p.key}" ${ro?"disabled":""} aria-label="Дней до выезда">
+     <span class="num ${over?"due-bad":dd<=2&&!s.done?"due-soon":""}">${fd(p.due)}${over?" · просрочено "+(-dd)+" дн.":""}</span>
+     <select data-resp="${p.key}" ${ro?"disabled":""}>${["Менеджер","ТП","Менеджер / ТП","ТП / ТТ"].map(r=>`<option ${r===p.resp?"selected":""}>${r}</option>`).join("")}</select>
+     ${s.done?`<span>✓ ${esc(s.by)} · ${esc(s.at)}</span>`:""}</div>
+    ${s.blocked?`<div class="issue bad" style="margin-top:6px">Заблокировано: ${esc(s.reason||"")}</div>`:""}
+    ${s.comment?`<div class="sub" style="margin-top:4px">💬 ${esc(s.comment)}</div>`:""}
+    ${UI.cmt===p.key?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px"><textarea id="cmt-text" rows="2" placeholder="${UI.cmtMode==="block"?"Причина блокировки":"Комментарий"}">${esc(UI.cmtMode==="block"?(s.reason||""):(s.comment||""))}</textarea><div style="display:flex;gap:6px"><button class="btn sm pri" data-cmt-save="${p.key}">Сохранить</button><button class="btn sm" data-cmt-cancel>Отмена</button></div></div>`:""}
+   </div>
+   <div class="ck-acts">${ro?"":`<button class="ico" data-cmt="${p.key}">Комментарий</button><button class="ico" data-block="${p.key}">${s.blocked?"Снять блок":"Блок"}</button><button class="ico" data-del="${p.key}" aria-label="Удалить пункт">×</button>`}</div></div>`}).join("")}</div>
+   ${ro?"":`<div class="addrow"><input type="text" id="new-item" placeholder="Новый пункт для этой ТТ (шаблон не меняется)"><input type="number" id="new-off" value="3" min="0" style="width:70px" aria-label="Д-"><button class="btn" data-act="add-item">Добавить</button></div>`}`;
+}
+function onList(t){
+  const c=t.chk;
+  return `<div class="ck">${onsiteTemplate(t).map(g=>`<div class="ck-group"><span>${g.name}</span><span class="num">${g.items.filter(x=>c[x.key]?.done).length}/${g.items.length}</span></div>${g.items.map(it=>{const s=c[it.key]||{};return `<div class="ck-item ${s.done?"done":""}"><span class="box ${s.done?"on":""}" aria-hidden="true"></span><div class="ck-text"><div class="tx">${it.req?'<span class="req">*</span> ':''}${esc(it.text)}${it.photo?' <span class="sub">· фото</span>':''}</div>${s.done?`<div class="ck-meta">✓ ${esc(s.by)} · ${esc(s.at)}</div>`:""}${s.photo?`<img class="thumb" src="${s.photo}" alt="">`:""}</div><span></span></div>`}).join("")}`).join("")}</div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="to-eng">Открыть в режиме инженера</button><span class="sub"><span class="req">*</span> обязательный пункт — без него этап не закрывается</span></div>`;
+}
+
+/* ---------- события ---------- */
+function cur(){return S.byId[UI.open]}
+const QL={skit:"КСО S.kit",csik:"CSIK (перенос)",ncr:"Демонтаж NCR",demCsik:"Демонтаж CSIK",lin:"Демонтаж лин. касс",rTerm:"Терминалы с демонтажа",rKkt:"ККТ с демонтажа",rCol:"Колонки с NCR",oTerm:"Заказ терминалов",oKkt:"Заказ ККТ",oFn:"Заказ ФН",oCol:"Заказ колонок",oGaz:"Заказ меток ДемоБанк"};
+function setQty(t,f,v){v=Math.max(0,Math.min(999,Math.round(+v||0)));if(t[f]===v)return;logIt(t,`${QL[f]}: ${t[f]} → ${v}`);t[f]=v;if(f==="csik"&&v===0)t.csikFrom=null;commit()}
+function commit(){save();render()}
+function align(t){const d=derive(t);const nv={oTerm:Math.max(0,d.need.term-t.rTerm),oKkt:Math.max(0,d.need.kkt-t.rKkt),oFn:Math.max(0,d.need.fn-t.rKkt),oCol:Math.max(0,d.need.col-t.rCol)};
+  const ch=Object.entries(nv).filter(([k,v])=>t[k]!==v);ch.forEach(([k,v])=>{logIt(t,`${QL[k]}: ${t[k]} → ${v} (выравнивание)`);t[k]=v});return ch.length}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button,[data-open],.scrim");if(!b)return;
+  const ds=b.dataset;
+  if(ds.view){UI.view=ds.view;UI.cmt=null;saveUI();render();scrollTo(0,0);return}
+  if(ds.mode){UI.mode=ds.mode;saveUI();render();return}
+  if(ds.quick!==undefined){UI.quick=UI.quick===ds.quick?"":ds.quick;render();return}
+  if(ds.open){UI.anim=true;UI.open=ds.open;UI.cardTab="prep";UI.cmt=null;renderDrawer();return}
+  if(ds.ctab){UI.cardTab=ds.ctab;UI.cmt=null;renderDrawer();return}
+  const act=ds.act;
+  if(act==="close"){UI.open=null;UI.cmt=null;renderDrawer();return}
+  if(act==="copy-order"){const txt=orderTSV();navigator.clipboard?.writeText(txt).then(()=>toast("Сводка скопирована — вставьте в Excel"),()=>toast("Не удалось скопировать: браузер запретил доступ к буферу"));return}
+  if(act==="align-all"){let n=0;S.tts.forEach(t=>{if(align(t))n++});commit();toast(n?`Заказ выровнен на ${n} ${plural(n,"ТТ","ТТ","ТТ")}`:"Баланс уже сходится");return}
+  if(act==="close-stage"){const t=S.byId[UI.engTT];t.closed=true;t.log.unshift([nowStamp(),roleName()+": этап «Работы на месте» закрыт, ТТ завершена"]);commit();toast("Этап закрыт. ТТ переведена в «Завершено»");return}
+  if(act==="to-eng"){UI.engTT=UI.open;UI.open=null;UI.view="eng";saveUI();render();scrollTo(0,0);return}
+  if(ds.eng){const t=S.byId[UI.engTT];const s=t.chk[ds.eng]||(t.chk[ds.eng]={});const it=onsiteFlat(t).find(x=>x.key===ds.eng);
+    if(!s.done&&it.photo&&!s.photo){toast("Сначала приложите фото");return}
+    s.done=!s.done;s.at=s.done?nowStamp():"";s.by=s.done?t.engineer:"";logIt(t,(s.done?"отмечено":"снята отметка")+" «"+it.text+"»");commit();return}
+  if(ds.cmt){UI.cmt=UI.cmt===ds.cmt&&UI.cmtMode==="cmt"?null:ds.cmt;UI.cmtMode="cmt";render();$("#cmt-text")?.focus();return}
+  if(ds.cmtCancel!==undefined){UI.cmt=null;render();return}
+  if(ds.cmtSave){const t=UI.view==="eng"&&!UI.open?S.byId[UI.engTT]:cur();const s=t.chk[ds.cmtSave]||(t.chk[ds.cmtSave]={});const v=$("#cmt-text").value.trim();
+    if(UI.cmtMode==="block"){s.blocked=true;s.reason=v||"Причина не указана";logIt(t,"заблокировано: "+s.reason)}else{s.comment=v;logIt(t,"комментарий: "+v)}
+    UI.cmt=null;commit();return}
+  const t=cur();if(!t)return;
+  if(ds.inc){setQty(t,ds.inc,t[ds.inc]+1);return}
+  if(ds.dec){setQty(t,ds.dec,t[ds.dec]-1);return}
+  if(ds.bag){const v=+ds.bag;if(t.bag!==v){logIt(t,`Пакетная зона S.kit: ${t.bag} → ${v}`);t.bag=v;commit()}return}
+  if(act==="align"){const n=align(t);commit();toast(n?"Заказ пересчитан под потребность":"Баланс уже сходится");return}
+  if(act==="reset-qty"){Object.entries(t.orig).forEach(([k,v])=>t[k]=v);logIt(t,"количества возвращены к данным таблицы");commit();return}
+  if(ds.chk){const s=t.chk[ds.chk]||(t.chk[ds.chk]={});const p=prepItems(t).find(x=>x.key===ds.chk);s.done=!s.done;if(s.done){s.blocked=false;s.at=fd(TODAY);s.by=t.manager}logIt(t,(s.done?"отмечено":"снята отметка")+" «"+p.text+"»");commit();return}
+  if(ds.block){const s=t.chk[ds.block]||(t.chk[ds.block]={});if(s.blocked){s.blocked=false;s.reason="";logIt(t,"блокировка снята");commit()}else{UI.cmt=ds.block;UI.cmtMode="block";renderDrawer();$("#cmt-text")?.focus()}return}
+  if(ds.del){const p=prepItems(t).find(x=>x.key===ds.del);if(p.custom)t.custom=t.custom.filter(c=>c.key!==p.key);else(t.prepEdit[p.key]||(t.prepEdit[p.key]={})).removed=true;logIt(t,"удалён пункт «"+p.text+"»");commit();return}
+  if(act==="add-item"){const v=$("#new-item").value.trim();if(!v){$("#new-item").focus();return}const off=Math.max(0,+$("#new-off").value||0);t.custom.push({key:"c"+Date.now(),text:v,off,resp:"Менеджер"});logIt(t,"добавлен пункт «"+v+"»");commit();return}
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&UI.open){UI.open=null;renderDrawer()}
+  if(e.key==="Enter"&&e.target.dataset?.open){UI.open=e.target.dataset.open;renderDrawer()}
+});
+document.addEventListener("change",e=>{
+  const el=e.target,id=el.id,ds=el.dataset;
+  if(id==="role"){UI.role=el.value;if(UI.view==="dict"&&UI.role!=="admin")UI.view="map";if(UI.role==="engineer")UI.view="eng";saveUI();render();return}
+  if(id==="f-st"){UI.fSt=el.value;render();return}
+  if(id==="f-ul"){UI.fUl=el.value;render();return}
+  if(id==="f-fmt"){UI.fFmt=el.value;render();return}
+  if(id==="f-mgr"){UI.fMgr=el.value;render();return}
+  if(id==="f-from"){UI.from=el.value;render();return}
+  if(id==="f-to"){UI.to=el.value;render();return}
+  if(id==="eng-tt"){UI.engTT=el.value;UI.cmt=null;render();return}
+  if(ds.photo){const f=el.files[0];if(!f)return;const t=S.byId[UI.engTT];shrink(f).then(url=>{const s=t.chk[ds.photo]||(t.chk[ds.photo]={});s.photo=url;logIt(t,"приложено фото");commit()}).catch(()=>toast("Не удалось прочитать файл"));return}
+  const t=cur();if(!t)return;
+  if(ds.qty){setQty(t,ds.qty,el.value);return}
+  if(id==="c-date"&&el.value){logIt(t,`дата работ: ${fd(t.date)} → ${fd(el.value)}, сроки пересчитаны`);t.date=el.value;commit();toast("Сроки подготовки пересчитаны от новой даты");return}
+  if(id==="c-mgr"){logIt(t,"менеджер: "+el.value);t.manager=el.value;commit();return}
+  if(id==="c-eng"){logIt(t,"инженер: "+el.value);t.engineer=el.value;commit();return}
+  if(id==="c-from"){t.csikFrom=el.value||null;logIt(t,"CSIK снимаем с: "+ttName(el.value));commit();return}
+  if(ds.off){const e_=t.prepEdit[ds.off]||(t.prepEdit[ds.off]={});const c=t.custom.find(x=>x.key===ds.off);const v=Math.max(0,+el.value||0);if(c)c.off=v;else e_.off=v;logIt(t,"срок пункта изменён на Д-"+v);commit();return}
+  if(ds.resp){const c=t.custom.find(x=>x.key===ds.resp);if(c)c.resp=el.value;else(t.prepEdit[ds.resp]||(t.prepEdit[ds.resp]={})).resp=el.value;logIt(t,"ответственный: "+el.value);commit();return}
+});
+document.addEventListener("input",e=>{if(e.target.id==="f-q"){UI.q=e.target.value;const pos=e.target.selectionStart;render();const f=$("#f-q");f.focus();f.setSelectionRange(pos,pos)}});
+function shrink(file){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const img=new Image();img.onerror=rej;img.onload=()=>{const k=Math.min(1,480/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=img.width*k;c.height=img.height*k;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.7))};img.src=r.result};r.readAsDataURL(file)})}
+let resetArmed=false;
+$("#reset").addEventListener("click",e=>{if(!resetArmed){resetArmed=true;e.target.textContent="Нажмите ещё раз — все изменения пропадут";setTimeout(()=>{resetArmed=false;e.target.textContent="Сбросить к данным таблицы"},4000);return}
+  resetArmed=false;e.target.textContent="Сбросить к данным таблицы";try{localStorage.removeItem(KEY)}catch(_){}fresh();save();UI.open=null;render();toast("Данные возвращены к таблице")});
+
+load();render();
+})();
+</script>
