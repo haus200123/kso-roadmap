@@ -33,6 +33,19 @@ const ORDER_COLS=[["ul","Юрлицо"],["tt","ТТ"],["sk","S.kit"],["sk1","S.k
 const SEC={onsite:"Отработка по ТТ",prep:"Подготовительные действия по ТТ"};
 const SECX={onsite:"Отработка на ТТ",prep:"Подготовительные действия"};
 const ROLE={admin:"Администратор",lead:"Старший",engineer:"Инженер"};
-const api={pad,isoD,fd,addD,stamp,plural,demText,tok,qtyLine,groups,orderRows,ORDER_COLS,SEC,SECX,ROLE};
+/* ФИО инженера: только буквы (рус/лат), дефис, апостроф; не меньше двух слов по 2+ буквы */
+function checkFio(raw){
+  const s=String(raw||"").replace(/\s+/g," ").trim();
+  if(!s)return {error:"Впишите фамилию и имя"};
+  if(/\d/.test(s))return {error:"Цифры в ФИО вводить нельзя"};
+  if(/[^A-Za-zА-Яа-яЁё\s'\-]/.test(s))return {error:"В ФИО допустимы только буквы, пробел и дефис"};
+  const w=s.split(" ");
+  if(w.length<2)return {error:"Нужно минимум два слова: фамилия и имя"};
+  if(w.some(x=>x.replace(/['\-]/g,"").length<2||/^['\-]|['\-]$/.test(x)))return {error:"Каждое слово ФИО — не короче двух букв"};
+  if(s.length>60)return {error:"Слишком длинное ФИО"};
+  const name=w.map(x=>x.split("-").map(y=>y.charAt(0).toUpperCase()+y.slice(1).toLowerCase()).join("-")).join(" ");
+  return {name};
+}
+const api={checkFio,pad,isoD,fd,addD,stamp,plural,demText,tok,qtyLine,groups,orderRows,ORDER_COLS,SEC,SECX,ROLE};
 if(typeof module!=="undefined")module.exports=api;else root.KSO=api;
 })(this);
