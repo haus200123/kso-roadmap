@@ -216,9 +216,9 @@ async function handle(req,res){
   }
   if(M==="POST"&&p==="/api/tt"){
     if(!isA)return err(res,403,"Нет прав");const b=await body(req,1e5);const name=String(b.name||"").trim();if(!name)return err(res,400,"Укажите адрес");
-    const skit=Math.max(0,+b.skit||0),ncr=Math.max(0,+b.ncr||0),fmt=String(b.fmt||"Реми").trim();
-    const t={name,city:String(b.city||"").trim(),fmt,ul:String(b.ul||"").trim(),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",skit,bag:(ncr>0||fmt==="Реми Сити")?2:1,csik:0,csikFrom:"",ncr,demCsik:0,lin:0,
-      rTerm:Math.min(ncr,skit),rKkt:Math.min(ncr,skit),rCol:0,oTerm:Math.max(0,skit-ncr),oKkt:Math.max(0,skit-ncr),oFn:Math.max(0,skit-ncr),oCol:skit,oGaz:0,leg:false,note:"",
+    const n=v=>Math.max(0,Math.min(999,Math.round(+v||0)));const skit=n(b.skit),ncr=n(b.ncr),lin=n(b.lin),demCsik=n(b.demCsik),fmt=String(b.fmt||"Реми").trim();const dem=ncr+lin+demCsik,reuse=Math.min(dem,skit);
+    const t={name,city:String(b.city||"").trim(),fmt,ul:String(b.ul||"").trim(),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",skit,bag:(ncr>0||fmt==="Реми Сити")?2:1,csik:0,csikFrom:"",ncr,demCsik,lin,
+      rTerm:reuse,rKkt:reuse,rCol:0,oTerm:skit-reuse,oKkt:skit-reuse,oFn:skit-reuse,oCol:skit,oGaz:0,leg:false,note:"",
       order:Math.max(0,...Object.values(DB.tt).map(x=>x.order||0))+1,owner:{prep:"",onsite:""},exec:{prep:"",onsite:""}};
     const id=newId("t");DB.tt[id]=t;DB.lists[id]=genLists(t);DB.checks[id]={prep:{},onsite:{}};commit();journal(req,s,"Создана ТТ",{tt:name});
     return send(res,200,{ok:true,id});
