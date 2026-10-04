@@ -370,6 +370,7 @@ function paramsView(id){
   if(!isAdmin())return `<div class="qline">${line}</div>`;
   return `<details class="params" ${S.paramsOpen===id?"open":""} data-params="${id}"><summary>Параметры ТТ и количество касс</summary>
    <div class="qline" style="padding:0 12px 10px">${line}</div>
+   <div class="sub" style="padding:0 12px 10px">Изменили количество касс (например, добавили демонтаж)? Нажмите внизу карточки «Пересоздать пункты из шаблона» — в чек-листах появятся нужные пункты.</div>
    <div class="pgrid">${PF.map(([k,l,ty])=>ty==="wide"?`<label class="wide">${l}<textarea rows="2" data-f="${id}|${k}">${esc(t[k]||"")}</textarea></label>`:`<label>${l}<input type="${ty==="n"?"number":"text"}" ${ty==="n"?'min="0"':""} value="${esc(t[k]??"")}" data-f="${id}|${k}"></label>`).join("")}</div></details>`;
 }
 function stLine(id,sec,key,c){
@@ -437,7 +438,7 @@ function editList(id){
 function newTTView(){
   return `<div class="pick"><b>Новая ТТ</b>
     <div class="bar-row"><label>Адрес<input type="text" id="n-name" placeholder="Улица, дом"></label><label>Город<input type="text" id="n-city"></label><label>Формат<input type="text" id="n-fmt" list="fmts"></label><label>Юрлицо<input type="text" id="n-ul"></label></div>
-    <div class="bar-row"><label>Установка S.kit<input type="number" id="n-skit" min="0" value="2"></label><label>Демонтаж NCR<input type="number" id="n-ncr" min="0" value="0"></label><label>Дата работ<input type="date" id="n-date"></label></div>
+    <div class="bar-row"><label>Установка S.kit<input type="number" id="n-skit" min="0" value="2"></label><label>Демонтаж NCR<input type="number" id="n-ncr" min="0" value="0"></label><label>Демонтаж линейных касс<input type="number" id="n-lin" min="0" value="0"></label><label>Демонтаж CSIK<input type="number" id="n-dcsik" min="0" value="0"></label><label>Дата работ<input type="date" id="n-date"></label></div>
     <datalist id="fmts"><option value="Реми"><option value="Реми Сити"><option value="Реми Эконом"></datalist>
     <div style="display:flex;gap:8px"><button class="btn pri" data-act="create-tt">Создать</button><button class="btn" data-act="cancel-new">Отмена</button></div>
     <div class="sub">Остальные количества можно поправить в карточке после создания. Чек-листы создадутся по шаблону.</div></div>`;
@@ -570,7 +571,7 @@ document.addEventListener("click",async e=>{
   if(d.act==="cancel-confirm"){S.confirmDel=null;S.confirmReset=null;render();return}
   if(d.act==="new-tt"){S.newTT=true;render();setTimeout(()=>$("#n-name")?.focus(),20);return}
   if(d.act==="cancel-new"){S.newTT=false;render();return}
-  if(d.act==="create-tt"){const b={name:$("#n-name").value,city:$("#n-city").value,fmt:$("#n-fmt").value,ul:$("#n-ul").value,skit:$("#n-skit").value,ncr:$("#n-ncr").value,date:$("#n-date").value};
+  if(d.act==="create-tt"){const b={name:$("#n-name").value,city:$("#n-city").value,fmt:$("#n-fmt").value,ul:$("#n-ul").value,skit:$("#n-skit").value,ncr:$("#n-ncr").value,lin:$("#n-lin").value,demCsik:$("#n-dcsik").value,date:$("#n-date").value};
     if(!b.name.trim()){$("#n-name").focus();return}const r=await act("POST","/api/tt",b,"ТТ создана");if(r){S.newTT=false;S.open.add(r.id);render()}return}
   if(d.act==="journal-reload"){S.journal=null;render();return}
   if(d.userEdit){S.userEdit=d.userEdit;render();return}
