@@ -144,6 +144,16 @@ details.params summary{padding:9px 12px;cursor:pointer;font-weight:700;font-size
 .thumb{position:relative;border:0;padding:0;background:none}
 .thumb img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}
 .thumb span{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;background:rgba(0,0,0,.55);color:#fff;border-radius:0 0 8px 8px;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fio-warn{font-size:12.5px;line-height:1.4;padding:8px 10px;border-radius:8px;background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--fg)}
+.fio-err{color:var(--bad);font-size:12.5px;min-height:1em}
+.lcard input.bad{border-color:var(--bad)}
+.tp{display:flex;flex-direction:column;gap:8px;padding:10px 0}
+.tp-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface)}
+.tp-city{display:flex;flex-direction:column;gap:4px}
+.tp-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 12px;padding-left:22px}
+.tp label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.tp input[type=checkbox]{width:16px;height:16px;margin:0;flex:none}
+.resp{color:var(--accent)}
 .subs{margin-top:8px;border-left:2px solid var(--line);padding-left:10px;display:flex;flex-direction:column}
 .si{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px dashed var(--line-2)}
 .si:last-child{border-bottom:0}
@@ -194,7 +204,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(m,ms=3200){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",ms)}
 
-const S={me:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
+const S={me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
   lb:null,newTT:false,confirmDel:null,confirmReset:null,rejecting:null,paramsOpen:null,engTT:null,lastPending:null,offline:false,users:null,journal:null,jq:"",userEdit:null};
 try{S.engTT=sessionStorage.getItem("kso-eng-tt")}catch(e){}
 
@@ -210,7 +220,7 @@ async function act(method,path,data,okMsg){try{const j=await api(method,path,dat
 let reloading=null;
 async function reload(){
   if(reloading)return reloading;
-  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.wikiRoot=j.wikiRoot||"";S.loaded=true;S.offline=false;notifyPending();soft()}finally{reloading=null}})();
+  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";S.loaded=true;S.offline=false;notifyPending();soft()}finally{reloading=null}})();
   return reloading;
 }
 let es=null;
@@ -271,7 +281,9 @@ function loginView(){
     <div class="err" id="lg-err"></div>
     <button class="btn pri" type="submit" style="padding:11px;justify-content:center">Войти</button>
     <div class="or">или</div>
-    <label>Инженер: фамилия и имя<span class="row"><input type="text" id="lg-fio" placeholder="Например, Петров Иван" autocomplete="name"><button class="btn" type="button" id="lg-eng">Войти как инженер</button></span></label>
+    <label>Инженер: фамилия и имя<span class="row"><input type="text" id="lg-fio" placeholder="Например, Петров Иван" autocomplete="name" maxlength="60"><button class="btn" type="button" id="lg-eng">Войти как инженер</button></span></label>
+    <div class="fio-err" id="lg-fio-err" role="alert"></div>
+    <div class="fio-warn">⚠ Вводите <b>настоящие фамилию и имя</b>. Работа на ТТ и отметки под вымышленным или неполным ФИО <b>не будут засчитаны в табель</b>.</div>
   </form></div>`;
 }
 const BELL=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
@@ -304,7 +316,7 @@ function mainView(){
     ${isAdmin()?`<button class="btn pri" data-act="new-tt">Добавить ТТ</button>`:""}${S.view==="onsite"&&S.wikiRoot?`<a class="wiki" href="${esc(S.wikiRoot)}" target="_blank" rel="noopener">📘 Инструкции CSI-K V3</a>`:""}</div>
     ${S.newTT?newTTView():""}
     ${isAdmin()&&pend?`<div class="notice">На проверке у старшего: ${pend} ${plural(pend,"отметка","отметки","отметок")} инженеров.</div>`:""}
-    <div class="sub" style="margin-bottom:8px">${list.length} ТТ · сортировка по дате работ</div>
+    <div class="sub" style="margin-bottom:8px">${list.length} ТТ${S.limited?" · показаны только назначенные вам ТТ":""} · сортировка по дате работ</div>
     <div class="tts">${list.map(id=>ttView(id)).join("")||`<div class="empty">Ничего не найдено.</div>`}</div>`;
 }
 function engView(){
@@ -337,6 +349,8 @@ function ttBody(id){
       <label>Исполнитель (назначает старший)<input type="text" list="names" value="${esc(ex)}" data-exec="${id}" placeholder="ФИО"></label>
       <a class="btn" href="/api/export/${id}/${sec}" download>Выгрузить в Excel</a>
      </div><datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`;
+  if(isAdmin()&&S.view==="prep"){const ppl=[...new Set([...S.people,...Object.values(S.TT).flatMap(x=>[x.owner?.prep,x.owner?.onsite,x.exec?.prep,x.exec?.onsite]),...Object.values(S.LISTS).flatMap(l=>(l.prep||[]).map(i=>i.resp))].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
+    h+=`<datalist id="people-list">${ppl.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
   h+=paramsView(id);
   if(t.note)h+=`<div class="note"><b>Примечание:</b> ${esc(t.note)}</div>`;
   if(isAdmin())h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn sm" data-edit="${id}">${S.edit===id?"Готово":"Редактировать пункты чек-листа"}</button>${S.edit===id?`<span class="sub">Метки в тексте подставляются из количеств ТТ: {skit} {csik} {kso} {ncr} {demCsik} {lin} {dem} {rKkt} {rTerm} {rCol} {oTerm} {oKkt} {oFn} {oCol} {oGaz} {ul}</span>`:""}</div>`;
@@ -400,10 +414,11 @@ function checkList(id){
        ${S.subAdd===key?`<div class="tools"><input type="text" data-sub-new="${key}" placeholder="Текст подзадачи" style="flex:1 1 240px"><button class="btn sm pri" data-sub-save="${key}">Добавить</button><button class="btn sm" data-act="sub-cancel">Отмена</button></div>`:""}</div>`:"";
     return `<div class="it ${on?"done":""}">${box}
      <div><div class="tx">${i.req?'<span class="req" title="Обязательный пункт">*</span> ':''}${esc(tok(i.text,t))}</div>
-      <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
+      <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${sec==="prep"&&i.resp?`<span>Доп. ответственный: <b class="resp">${esc(i.resp)}</b></span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
       ${hasSub?"":rejectBox(key)}
       ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="/photos/${p.id}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
-      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}</div>
+      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
+      ${isAdmin()&&sec==="prep"&&S.respEdit===key?`<div class="tools"><input type="text" list="people-list" data-resp-input="${key}" value="${esc(i.resp||"")}" placeholder="ФИО: впишите или выберите из списка" style="flex:1 1 240px"><button class="btn sm pri" data-resp-save="${key}">Сохранить</button>${i.resp?`<button class="btn sm no" data-resp-clear="${key}">Убрать</button>`:""}<button class="btn sm" data-act="resp-cancel">Отмена</button></div>`:""}
       ${cmtBox(id,sec,i.id,key)}
       ${subsHtml}
      </div></div>`}).join("")}</div>`}).join("");
@@ -436,21 +451,44 @@ function ordersView(){
    <tr class="tot"><td>Итого</td>${C.slice(1).map(([k])=>`<td class="r num">${tot[k]}</td>`).join("")}</tr></tbody></table></div>
    <p class="sub">Считается из количеств в карточках ТТ. Чтобы изменить, администратор правит «Параметры ТТ».</p>`;
 }
+function ttPicker(scope,sel){
+  const by={};Object.entries(S.TT).forEach(([id,t])=>{(by[t.city||"—"]=by[t.city||"—"]||[]).push([id,t])});
+  const cities=Object.keys(by).sort((a,b)=>a.localeCompare(b,"ru"));const has=id=>sel&&sel.includes(id);
+  return `<div class="tp" data-tp-scope="${scope}">
+    <label><input type="checkbox" data-tp-all="${scope}" ${sel?"":"checked"}> <b>Все ТТ</b>&nbsp;<span class="sub">(в том числе новые, добавленные позже)</span></label>
+    <div class="tp-list" data-tp-list="${scope}" ${sel?"":"hidden"}>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input type="search" data-tp-q="${scope}" placeholder="Поиск ТТ" style="flex:1 1 200px"><span class="sub" data-tp-count="${scope}">Выбрано: ${sel?sel.length:0}</span></div>
+      ${cities.map(c=>{const L=by[c].sort((a,b)=>a[1].name.localeCompare(b[1].name,"ru"));const all=L.every(([id])=>has(id));
+        return `<div class="tp-city" data-tp-cityblock="${esc(c)}"><label><input type="checkbox" data-tp-city="${scope}|${esc(c)}" ${all?"checked":""}> <b>${esc(c)}</b> <span class="sub">· ${L.length}</span></label>
+        <div class="tp-items">${L.map(([id,t])=>`<label data-tp-name="${esc((t.name+" "+t.city+" "+t.fmt+" "+t.ul).toLowerCase())}"><input type="checkbox" data-tp="${scope}" value="${id}" ${has(id)?"checked":""}> ${esc(t.name)} <span class="sub">${esc(t.fmt)}</span></label>`).join("")}</div></div>`}).join("")}
+    </div></div>`;
+}
+function readTp(scope){const all=document.querySelector(`[data-tp-all="${scope}"]`);if(!all||all.checked)return null;return [...document.querySelectorAll(`[data-tp="${scope}"]:checked`)].map(x=>x.value)}
+function tpSync(scope){
+  const n=document.querySelectorAll(`[data-tp="${scope}"]:checked`).length;const c=document.querySelector(`[data-tp-count="${scope}"]`);if(c)c.textContent="Выбрано: "+n;
+  document.querySelectorAll(`[data-tp-city^="${scope}|"]`).forEach(cb=>{const box=cb.closest(".tp-city");const items=[...box.querySelectorAll(`[data-tp="${scope}"]`)];cb.checked=items.length&&items.every(x=>x.checked);cb.indeterminate=!cb.checked&&items.some(x=>x.checked)});
+}
+function ttLabel(u){if(u.role==="admin")return `<span class="sub">все (админ)</span>`;if(!u.tts)return "Все ТТ";
+  const names=u.tts.map(id=>S.TT[id]?S.TT[id].city+", "+S.TT[id].name:"").filter(Boolean);return `<span title="${esc(names.join("\n"))}">${u.tts.length} ${plural(u.tts.length,"ТТ","ТТ","ТТ")}</span>${u.tts.length?"":` <span class="badge bad">не видит ни одной</span>`}`}
 function usersView(){
   if(!S.users){loadUsers();return `<div class="empty">Загружаю…</div>`}
+  if(!S.loaded){reload().catch(()=>{});return `<div class="empty">Загружаю…</div>`}
   return `<h1 class="pg">Пользователи</h1>
-   <div class="panel scroll"><table><thead><tr><th>Логин</th><th>Имя</th><th>Роль</th><th>Статус</th><th></th></tr></thead><tbody>
+   <div class="panel scroll"><table><thead><tr><th>Логин</th><th>Имя</th><th>Роль</th><th>ТТ</th><th>Статус</th><th></th></tr></thead><tbody>
    ${S.users.map(u=>{const ed=S.userEdit===u.login;return `<tr><td class="num">${esc(u.login)}</td>
      <td>${ed?`<input type="text" id="ue-name" value="${esc(u.name)}">`:esc(u.name)}</td>
      <td>${ed?`<select id="ue-role"><option value="lead" ${u.role==="lead"?"selected":""}>Старший</option><option value="admin" ${u.role==="admin"?"selected":""}>Администратор</option></select>`:ROLE[u.role]}</td>
+     <td>${ttLabel(u)}</td>
      <td>${u.active?'<span class="badge" style="background:var(--ok-soft);color:var(--ok)">активен</span>':'<span class="badge bad">отключён</span>'}</td>
      <td style="white-space:nowrap">${ed?`<input type="password" id="ue-pass" placeholder="Новый пароль (не менять — пусто)" style="width:220px"> <button class="btn sm pri" data-user-save="${esc(u.login)}">Сохранить</button> <button class="btn sm" data-act="user-cancel">Отмена</button>`:
-       `<button class="btn sm" data-user-edit="${esc(u.login)}">Изменить</button> ${u.login===S.me.login?"":`<button class="btn sm ${u.active?"no":"ok"}" data-user-active="${esc(u.login)}|${u.active?0:1}">${u.active?"Отключить":"Включить"}</button>`}`}</td></tr>`}).join("")}
+       `<button class="btn sm" data-user-edit="${esc(u.login)}">Изменить</button> ${u.login===S.me.login?"":`<button class="btn sm ${u.active?"no":"ok"}" data-user-active="${esc(u.login)}|${u.active?0:1}">${u.active?"Отключить":"Включить"}</button>`}`}</td></tr>
+     ${ed?`<tr><td colspan="6"><div id="ue-tpwrap" ${u.role==="lead"?"":"hidden"}><b>ТТ, которые видит старший</b>${ttPicker("ue",u.tts)}</div></td></tr>`:""}`}).join("")}
    </tbody></table></div>
    <div class="pick" style="margin-top:14px"><b>Новый пользователь</b>
     <div class="bar-row"><label>Логин (латиница)<input type="text" id="nu-login"></label><label>Имя<input type="text" id="nu-name"></label><label>Пароль<input type="password" id="nu-pass"></label>
      <label>Роль<select id="nu-role"><option value="lead">Старший</option><option value="admin">Администратор</option></select></label><button class="btn pri" data-act="user-add">Добавить</button></div>
-    <div class="sub">Инженерам учётные записи не нужны: они входят по фамилии и имени.</div></div>`;
+    <div id="nu-tpwrap"><b>ТТ, которые будет видеть старший</b>${ttPicker("nu",null)}</div>
+    <div class="sub">Инженерам учётные записи не нужны: они входят по фамилии и имени. Администратор видит все ТТ.</div></div>`;
 }
 async function loadUsers(){try{S.users=(await api("GET","/api/users")).users}catch(e){S.users=[];toast(e.message)}render()}
 function journalView(){
@@ -487,7 +525,8 @@ document.addEventListener("submit",async e=>{
 });
 document.addEventListener("click",async e=>{
   const el=e.target.closest("button,[data-toggle],.lb");if(!el)return;const d=el.dataset;
-  if(el.id==="lg-eng"){try{await api("POST","/api/login-engineer",{name:$("#lg-fio").value});start()}catch(err){$("#lg-err").textContent=err.message}return}
+  if(el.id==="lg-eng"){const v=KSO.checkFio($("#lg-fio").value);if(v.error){$("#lg-fio-err").textContent=v.error;$("#lg-fio").classList.add("bad");$("#lg-fio").focus();return}
+    try{await api("POST","/api/login-engineer",{name:v.name});start()}catch(err){$("#lg-fio-err").textContent=err.message}return}
   if(d.act==="lb-close"){if(e.target.closest("img,a"))return;S.lb=null;render();return}
   if(d.view){S.view=d.view;S.edit=null;S.notifOpen=false;if(d.view==="users")S.users=null;if(d.view==="journal")S.journal=null;render();scrollTo(0,0);return}
   if(d.act==="logout"){await api("POST","/api/logout").catch(()=>{});if(es)es.close();S.me=null;S.open.clear();S.loaded=false;S.lastPending=null;document.title="Дорожная карта КСО";render();return}
@@ -505,6 +544,10 @@ document.addEventListener("click",async e=>{
     const [tt,sec,item,sub]=d.cmtSend.split("|");ta.value="";ta.blur();act("POST","/api/comments",{tt,sec,item,sub:sub||undefined,text},"Комментарий добавлен");return}
   if(d.cmtDel){const [tt,cid]=d.cmtDel.split("|");act("DELETE",`/api/comments/${tt}/${cid}`,null,"Комментарий удалён");return}
   if(d.subAdd){S.subAdd=d.subAdd;S.subEdit=null;render();setTimeout(()=>document.querySelector(`[data-sub-new="${d.subAdd}"]`)?.focus(),20);return}
+  if(d.respEdit){S.respEdit=d.respEdit;render();setTimeout(()=>document.querySelector(`[data-resp-input="${d.respEdit}"]`)?.focus(),20);return}
+  if(d.act==="resp-cancel"){S.respEdit=null;render();return}
+  if(d.respSave||d.respClear){const k=d.respSave||d.respClear;const [tt,sec,item]=k.split("|");const v=d.respClear?"":(document.querySelector(`[data-resp-input="${k}"]`)?.value||"").trim();
+    S.respEdit=null;document.activeElement?.blur();act("POST","/api/item-resp",{tt,sec,item,resp:v},v?"Доп. ответственный назначен":"Доп. ответственный снят");return}
   if(d.act==="sub-cancel"){S.subAdd=null;S.subEdit=null;render();return}
   if(d.subSave){const inp=document.querySelector(`[data-sub-new="${d.subSave}"]`);const text=(inp?.value||"").trim();if(!text){inp?.focus();return}
     const [tt,sec,item]=d.subSave.split("|");inp.value="";inp.blur();await act("POST","/api/sub",{tt,sec,item,text},"Подзадача добавлена");setTimeout(()=>document.querySelector(`[data-sub-new="${d.subSave}"]`)?.focus(),30);return}
@@ -532,9 +575,9 @@ document.addEventListener("click",async e=>{
   if(d.act==="journal-reload"){S.journal=null;render();return}
   if(d.userEdit){S.userEdit=d.userEdit;render();return}
   if(d.act==="user-cancel"){S.userEdit=null;render();return}
-  if(d.userSave){const b={name:$("#ue-name").value,role:$("#ue-role").value};const pw=$("#ue-pass").value;if(pw)b.password=pw;try{await api("PATCH","/api/users/"+encodeURIComponent(d.userSave),b);toast("Сохранено");S.userEdit=null;S.users=null;if(d.userSave===S.me.login){S.me=await api("GET","/api/me")}render()}catch(err){toast(err.message,5000)}return}
+  if(d.userSave){const b={name:$("#ue-name").value,role:$("#ue-role").value};if(b.role==="lead")b.tts=readTp("ue")??"all";const pw=$("#ue-pass").value;if(pw)b.password=pw;try{await api("PATCH","/api/users/"+encodeURIComponent(d.userSave),b);toast("Сохранено");S.userEdit=null;S.users=null;if(d.userSave===S.me.login){S.me=await api("GET","/api/me")}render()}catch(err){toast(err.message,5000)}return}
   if(d.userActive){const [l,a]=d.userActive.split("|");try{await api("PATCH","/api/users/"+encodeURIComponent(l),{active:a==="1"});S.users=null;render()}catch(err){toast(err.message,5000)}return}
-  if(d.act==="user-add"){try{await api("POST","/api/users",{login:$("#nu-login").value.trim(),name:$("#nu-name").value.trim(),password:$("#nu-pass").value,role:$("#nu-role").value});toast("Пользователь добавлен");S.users=null;render()}catch(err){toast(err.message,5000)}return}
+  if(d.act==="user-add"){try{await api("POST","/api/users",{login:$("#nu-login").value.trim(),name:$("#nu-name").value.trim(),password:$("#nu-pass").value,role:$("#nu-role").value,tts:$("#nu-role").value==="lead"?(readTp("nu")??"all"):"all"});toast("Пользователь добавлен");S.users=null;render()}catch(err){toast(err.message,5000)}return}
 });
 document.addEventListener("keydown",e=>{
   if((e.key==="Enter"||e.key===" ")&&e.target.dataset&&e.target.dataset.toggle){e.preventDefault();e.target.click()}
@@ -542,12 +585,23 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&e.target.id==="lg-fio"){e.preventDefault();$("#lg-eng").click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.subNew){e.preventDefault();document.querySelector(`[data-sub-save="${e.target.dataset.subNew}"]`)?.click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.subInput){e.preventDefault();document.querySelector(`[data-sub-upd="${e.target.dataset.subInput}"]`)?.click()}
+  if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.respInput){e.preventDefault();document.querySelector(`[data-resp-save="${e.target.dataset.respInput}"]`)?.click()}
   if(e.key==="Enter"&&e.target.id==="jq"){S.jq=e.target.value;S.journal=null;render()}
 });
 document.addEventListener("toggle",e=>{if(e.target.dataset&&e.target.dataset.params)S.paramsOpen=e.target.open?e.target.dataset.params:null},true);
-document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;const p=e.target.selectionStart;render();const f=$("#q");if(f){f.focus();f.setSelectionRange(p,p)}}});
+document.addEventListener("input",e=>{
+  if(e.target.id==="lg-fio"){const f=e.target,v=f.value,clean=v.replace(/[^A-Za-zА-Яа-яЁё\s'\-]/g,"");const msg=$("#lg-fio-err");
+    if(clean!==v){const p=f.selectionStart-(v.length-clean.length);f.value=clean;f.setSelectionRange(Math.max(0,p),Math.max(0,p));msg.textContent=/\d/.test(v)?"Цифры в ФИО вводить нельзя":"В ФИО допустимы только буквы, пробел и дефис";f.classList.add("bad")}
+    else{msg.textContent="";f.classList.remove("bad")}return}
+  if(e.target.dataset&&e.target.dataset.tpQ){const scope=e.target.dataset.tpQ,q=e.target.value.trim().toLowerCase();
+    document.querySelectorAll(`[data-tp-scope="${scope}"] .tp-city`).forEach(c=>{let any=false;c.querySelectorAll("[data-tp-name]").forEach(l=>{const ok=!q||l.dataset.tpName.includes(q)||c.dataset.tpCityblock.toLowerCase().includes(q);l.hidden=!ok;if(ok)any=true});c.hidden=!any});return}if(e.target.id==="q"){S.q=e.target.value;const p=e.target.selectionStart;render();const f=$("#q");if(f){f.focus();f.setSelectionRange(p,p)}}});
 document.addEventListener("change",async e=>{
   const el=e.target,d=el.dataset;
+  if(d.tpAll){const l=document.querySelector(`[data-tp-list="${d.tpAll}"]`);if(l)l.hidden=el.checked;return}
+  if(d.tpCity){const [scope]=d.tpCity.split("|");el.closest(".tp-city").querySelectorAll(`[data-tp="${scope}"]`).forEach(x=>{if(!x.closest("label").hidden)x.checked=el.checked});tpSync(scope);return}
+  if(d.tp){tpSync(d.tp);return}
+  if(el.id==="nu-role"){$("#nu-tpwrap").hidden=el.value!=="lead";return}
+  if(el.id==="ue-role"){$("#ue-tpwrap").hidden=el.value!=="lead";return}
   if(el.id==="eng-tt"){S.engTT=el.value;try{sessionStorage.setItem("kso-eng-tt",el.value)}catch(_){}render();return}
   if(d.date){act("PATCH","/api/tt/"+d.date,{date:el.value||""},el.value?"Дата изменена, сроки подготовки пересчитаны":"Дата снята");return}
   if(d.owner){act("PATCH","/api/tt/"+d.owner,{owner:{[S.view]:el.value}});return}

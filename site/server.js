@@ -88,7 +88,7 @@ function send(res,code,obj,headers){const b=Buffer.from(JSON.stringify(obj));res
 const err=(res,code,msg)=>send(res,code,{error:msg});
 function body(req,limit){return new Promise((ok,no)=>{let n=0;const ch=[];req.on("data",c=>{n+=c.length;if(n>limit){no(new Error("big"));req.destroy();return}ch.push(c)});req.on("end",()=>{try{ok(ch.length?JSON.parse(Buffer.concat(ch).toString("utf8")):{})}catch(e){no(e)}});req.on("error",no)})}
 function cookies(req){const o={};(req.headers.cookie||"").split(";").forEach(p=>{const i=p.indexOf("=");if(i>0)o[p.slice(0,i).trim()]=decodeURIComponent(p.slice(i+1).trim())});return o}
-function who(req){const t=cookies(req).sid;const s=t&&SESS[t];if(!s||s.exp<Date.now())return null;if(s.role!=="engineer"){const u=DB.users[(s.login||"").toLowerCase()];if(!u||!u.active)return null;s.name=u.name;s.role=u.role}return s}
+function who(req){const t=cookies(req).sid;const s=t&&SESS[t];if(!s||s.exp<Date.now())return null;if(s.role!=="engineer"){const u=DB.users[(s.login||"").toLowerCase()];if(!u||!u.active)return null;s.name=u.name;s.role=u.role;s.tts=u.role==="lead"&&Array.isArray(u.tts)?u.tts:null}return s}
 const MIME={".html":"text/html; charset=utf-8",".js":"application/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json",".jpg":"image/jpeg",".png":"image/png",".svg":"image/svg+xml",".ico":"image/x-icon"};
 function serveFile(res,file,extra){fs.readFile(file,(e,b)=>{if(e)return err(res,404,"Не найдено");res.writeHead(200,{"Content-Type":MIME[path.extname(file)]||"application/octet-stream","Content-Length":b.length,...(extra||{})});res.end(b)})}
 
@@ -115,7 +115,7 @@ const loginFails={};
 function checklistXlsx(id,sec,s){
   const t=DB.tt[id],L=(DB.lists[id]||{})[sec]||[],P=sec==="prep";
   const owner=(t.owner||{})[sec]||"",ex=(t.exec||{})[sec]||"";
-  const NC=P?5:4,last=P?"E":"D";
+  const NC=P?6:4,last=P?"F":"D";
   const rows=[],merges=[];let r=0;
   const push=(cells,h)=>{rows.push({cells,h});return ++r};
   const m=(a,b)=>merges.push(a+r+":"+b+r);
@@ -129,25 +129,26 @@ function checklistXlsx(id,sec,s){
   hl("Ответственный: "+(owner||"—")+"   ·   Исполнитель: "+(ex||"—"),9);
   const ql=K.qtyLine(t).join("; ");hl("Кассы: "+(ql||"—"),9,ql.length>90?32:18);
   push([]);
-  push(P?[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Уточнять у",s:8},{v:"Примечание",s:8}]:[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Примечание",s:8}],20);
+  push(P?[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Доп. ответственный",s:8},{v:"Уточнять у",s:8},{v:"Примечание",s:8}]:[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Примечание",s:8}],20);
   let n=0;
   K.groups(L).forEach(g=>{
     push(fill(g.name,4),20);m("A",last);
     g.items.forEach(i=>{n++;let text=(i.req?"* ":"")+K.tok(i.text,t);if(P&&t.date)text+="  (срок "+K.fd(K.addD(t.date,+i.d||0))+")";if(i.ph)text+="  [фото]";
       const hasSub=i.sub&&i.sub.length;
-      const row=[{v:n,s:6},{v:text,s:hasSub?10:3},{v:hasSub?"":"☐",s:5}];if(P)row.push({v:i.who||"",s:3});row.push({v:"",s:3});
-      push(row,H(text,P?50:62));
-      (i.sub||[]).forEach((x,k)=>{const tx="    • "+K.tok(x.text,t);const sr=[{v:n+"."+(k+1),s:6},{v:tx,s:3},{v:"☐",s:5}];if(P)sr.push({v:"",s:3});sr.push({v:"",s:3});push(sr,H(tx,P?50:62))});
+      const row=[{v:n,s:6},{v:text,s:hasSub?10:3},{v:hasSub?"":"☐",s:5}];if(P)row.push({v:i.resp||"",s:3},{v:i.who||"",s:3});row.push({v:"",s:3});
+      push(row,H(text,P?44:62));
+      (i.sub||[]).forEach((x,k)=>{const tx="    • "+K.tok(x.text,t);const sr=[{v:n+"."+(k+1),s:6},{v:tx,s:3},{v:"☐",s:5}];if(P)sr.push({v:"",s:3},{v:"",s:3});sr.push({v:"",s:3});push(sr,H(tx,P?50:62))});
     });
   });
   push([]);hl("* — обязательный пункт; [фото] — приложить фото на сайте; пункт с подзадачами закрыт, когда выполнены все подзадачи",7,28);push([]);
   hl("Инженер (ФИО): ________________________   Подпись: ____________   Дата: ____________",9,24);
   hl("Проверил (старший): ____________________   Подпись: ____________   Дата: ____________",9,24);
   hl("Выгружено "+K.stamp()+" · "+s.name,7);
-  return Buffer.from(buildXlsx({name:K.SECX[sec],cols:P?[6,54,7,18,18]:[6,64,7,22],rows,merges}));
+  return Buffer.from(buildXlsx({name:K.SECX[sec],cols:P?[6,48,7,17,16,14]:[6,64,7,22],rows,merges}));
 }
-function ordersXlsx(){
-  const R=K.orderRows(DB.tt),C=K.ORDER_COLS;const rows=[],merges=["A1:"+String.fromCharCode(64+C.length)+"1"];
+function ordersXlsx(only){
+  const src=only?Object.fromEntries(only.filter(id=>DB.tt[id]).map(id=>[id,DB.tt[id]])):DB.tt;
+  const R=K.orderRows(src),C=K.ORDER_COLS;const rows=[],merges=["A1:"+String.fromCharCode(64+C.length)+"1"];
   rows.push({h:26,cells:[{v:"Сводка заказа по юрлицам · "+K.stamp(),s:1}]});rows.push({cells:[]});
   rows.push({h:34,cells:C.map(c=>({v:c[1],s:8}))});
   R.forEach(r=>rows.push({h:20,cells:C.map(([k])=>({v:k==="ul"?r[k]:r[k],s:k==="ul"?3:6}))}));
@@ -176,8 +177,7 @@ async function handle(req,res){
     return send(res,200,{ok:true},{"Set-Cookie":`sid=${tok}; Path=/; HttpOnly; SameSite=Lax`+(rem?`; Max-Age=${72*3600}`:"")});
   }
   if(M==="POST"&&p==="/api/login-engineer"){
-    const b=await body(req,1e4);const name=String(b.name||"").replace(/\s+/g," ").trim().slice(0,60);
-    if(name.length<3)return err(res,400,"Впишите фамилию и имя");
+    const b=await body(req,1e4);const v=K.checkFio(b.name);if(v.error)return err(res,400,v.error);const name=v.name;
     const tok=crypto.randomBytes(24).toString("hex");SESS[tok]={role:"engineer",name,exp:Date.now()+16*3600e3};saveSess();journal(req,SESS[tok],"Вход инженера");
     return send(res,200,{ok:true},{"Set-Cookie":`sid=${tok}; Path=/; HttpOnly; SameSite=Lax`});
   }
@@ -186,19 +186,23 @@ async function handle(req,res){
   if(M==="GET"&&p==="/api/me")return send(res,200,s?{role:s.role,name:s.name,login:s.login||""}:{role:null});
   if(!s)return err(res,401,"Войдите заново");
   const isA=s.role==="admin",isL=s.role==="lead",isE=s.role==="engineer";
+  const canTT=id=>!isL||!s.tts||s.tts.includes(id);
+  const noTT=()=>err(res,403,"Эта ТТ вам не назначена");
 
   if(M==="GET"&&p==="/api/events"){
     res.writeHead(200,{"Content-Type":"text/event-stream","Cache-Control":"no-store","Connection":"keep-alive"});res.write(`data: {"v":${DB.v}}\n\n`);
     clients.add(res);req.on("close",()=>clients.delete(res));return;
   }
   if(M==="GET"&&p==="/api/state"){
-    const photos={};Object.entries(DB.photos).forEach(([k,v])=>photos[k]={tt:v.tt,sec:v.sec,item:v.item,by:v.by,role:v.role,at:v.at});
-    return send(res,200,{v:DB.v,tt:DB.tt,lists:DB.lists,checks:DB.checks,photos,comments:DB.comments,wikiRoot:WIKI_ROOT,today:K.isoD(new Date())});
+    const pick=o=>{if(!isL||!s.tts)return o;const r={};s.tts.forEach(id=>{if(o[id]!==undefined)r[id]=o[id]});return r};
+    const photos={};Object.entries(DB.photos).forEach(([k,v])=>{if(canTT(v.tt))photos[k]={tt:v.tt,sec:v.sec,item:v.item,by:v.by,role:v.role,at:v.at}});
+    const extra=isA?{people:[...new Set(Object.values(DB.users).filter(x=>x.active).map(x=>x.name))]}:{};
+    return send(res,200,{v:DB.v,tt:pick(DB.tt),lists:pick(DB.lists),checks:pick(DB.checks),photos,comments:pick(DB.comments),wikiRoot:WIKI_ROOT,today:K.isoD(new Date()),limited:!!(isL&&s.tts),...extra});
   }
   // ТТ
   let mm;
   if(M==="PATCH"&&(mm=p.match(/^\/api\/tt\/([\w-]+)$/))){
-    const id=mm[1],t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");if(isE)return err(res,403,"Нет прав");
+    const id=mm[1],t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");if(isE)return err(res,403,"Нет прав");if(!canTT(id))return noTT();
     const b=await body(req,1e5),ch=[];
     if(b.exec&&typeof b.exec==="object")SECS.forEach(sec=>{if(typeof b.exec[sec]==="string"){t.exec=t.exec||{};const v=b.exec[sec].trim().slice(0,80);if(t.exec[sec]!==v){ch.push(`исполнитель (${K.SECX[sec]}): ${v||"—"}`);t.exec[sec]=v}}});
     if(isA){
@@ -229,7 +233,7 @@ async function handle(req,res){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
     const b=await body(req,1e6);if(!Array.isArray(b.items))return err(res,400,"Нет пунктов");
     const before=(DB.lists[id]||{})[sec]||[];
-    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{})})).filter(i=>i.text);
+    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{}),resp:String(i.resp||"").slice(0,120)})).filter(i=>i.text);
     DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=L;commit();
     journal(req,s,"Изменён чек-лист",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`пунктов: ${before.length} → ${L.length}`});return send(res,200,{ok:true});
   }
@@ -239,7 +243,7 @@ async function handle(req,res){
   }
   if(M==="POST"&&p==="/api/check"){
     const b=await body(req,1e4),{tt:id,sec,action}=b;
-    if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");const it0=itemOf(id,sec,b.item);if(!it0)return err(res,404,"Пункт не найден");
+    if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");if(!canTT(id))return noTT();const it0=itemOf(id,sec,b.item);if(!it0)return err(res,404,"Пункт не найден");
     let it=it0,iid=it0.id;
     if(b.sub){const sb=(it0.sub||[]).find(x=>x.id===b.sub);if(!sb)return err(res,404,"Подзадача не найдена");it={text:it0.text+" → "+sb.text};iid=ckey(it0.id,sb.id)}
     else if(it0.sub&&it0.sub.length)return err(res,409,"У пункта есть подзадачи — отметьте их, пункт закроется сам");
@@ -262,10 +266,18 @@ async function handle(req,res){
     }else return err(res,400,"Неизвестное действие");
     commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
   }
+  // доп. ответственный у пункта (только админ)
+  if(M==="POST"&&p==="/api/item-resp"){
+    if(!isA)return err(res,403,"Назначает только администратор");
+    const b=await body(req,1e4),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const it=itemOf(id,sec,b.item);if(!it)return err(res,404,"Пункт не найден");
+    const v=String(b.resp||"").replace(/\s+/g," ").trim().slice(0,120);if(it.resp===v)return send(res,200,{ok:true});
+    it.resp=v;commit();journal(req,s,v?"Назначен доп. ответственный: "+v:"Снят доп. ответственный",{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
+  }
   // подзадачи (админ и старший)
   if(p==="/api/sub"&&["POST","PATCH","DELETE"].includes(M)){
     if(!isA&&!isL)return err(res,403,"Подзадачи меняют администратор и старший");
-    const b=await body(req,1e4),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const b=await body(req,1e4),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");if(!canTT(id))return noTT();
     const it=itemOf(id,sec,b.item);if(!it)return err(res,404,"Пункт не найден");it.sub=it.sub||[];
     let msg="";
     if(M==="POST"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");it.sub.push({id:newId("s"),text,link:safeLink(b.link)});msg="Добавлена подзадача: "+text}
@@ -276,7 +288,7 @@ async function handle(req,res){
   }
   // комментарии (все)
   if(M==="POST"&&p==="/api/comments"){
-    const b=await body(req,1e5),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const b=await body(req,1e5),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");if(!canTT(id))return noTT();
     const it=itemOf(id,sec,b.item);if(!it)return err(res,404,"Пункт не найден");
     if(b.sub&&!(it.sub||[]).some(x=>x.id===b.sub))return err(res,404,"Подзадача не найдена");
     const text=String(b.text||"").trim().slice(0,2000);if(!text)return err(res,400,"Пустой комментарий");
@@ -284,45 +296,47 @@ async function handle(req,res){
     commit();journal(req,s,"Комментарий",{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id]),details:text.slice(0,200)});return send(res,200,{ok:true});
   }
   if(M==="DELETE"&&(mm=p.match(/^\/api\/comments\/([\w-]+)\/(c[\w]+)$/))){
-    const L=DB.comments[mm[1]]||[],i=L.findIndex(c=>c.id===mm[2]);if(i<0)return err(res,404,"Нет комментария");
+    if(!canTT(mm[1]))return noTT();const L=DB.comments[mm[1]]||[],i=L.findIndex(c=>c.id===mm[2]);if(i<0)return err(res,404,"Нет комментария");
     if(!isA&&!(L[i].by===s.name&&L[i].role===s.role))return err(res,403,"Удалить может автор или администратор");
     L.splice(i,1);commit();journal(req,s,"Удалён комментарий",{tt:(DB.tt[mm[1]]||{}).name});return send(res,200,{ok:true});
   }
   // фото
   if(M==="POST"&&p==="/api/photos"){
-    const b=await body(req,25e6);const {tt:id,sec,item:iid}=b;if(!DB.tt[id]||!itemOf(id,sec,iid))return err(res,404,"Пункт не найден");
+    const b=await body(req,25e6);const {tt:id,sec,item:iid}=b;if(!DB.tt[id]||!itemOf(id,sec,iid))return err(res,404,"Пункт не найден");if(!canTT(id))return noTT();
     const m=/^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(String(b.data||""));if(!m)return err(res,400,"Нужна картинка");
     const pid=newId("f"),file=pid+"."+(m[1]==="jpeg"?"jpg":m[1]);fs.writeFileSync(path.join(PHOTOS,file),Buffer.from(m[2],"base64"));
     DB.photos[pid]={tt:id,sec,item:iid,by:s.name,role:s.role,at:K.stamp(),file};commit();
     journal(req,s,"Добавлено фото",{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(itemOf(id,sec,iid).text,DB.tt[id])});return send(res,200,{ok:true,id:pid});
   }
-  if(M==="GET"&&(mm=p.match(/^\/photos\/(f[\w]+)$/))){const ph=DB.photos[mm[1]];if(!ph)return err(res,404,"Нет фото");return serveFile(res,path.join(PHOTOS,ph.file),{"Cache-Control":"private, max-age=86400"})}
+  if(M==="GET"&&(mm=p.match(/^\/photos\/(f[\w]+)$/))){const ph=DB.photos[mm[1]];if(!ph)return err(res,404,"Нет фото");if(!canTT(ph.tt))return noTT();return serveFile(res,path.join(PHOTOS,ph.file),{"Cache-Control":"private, max-age=86400"})}
   if(M==="DELETE"&&(mm=p.match(/^\/api\/photos\/(f[\w]+)$/))){
-    const ph=DB.photos[mm[1]];if(!ph)return err(res,404,"Нет фото");if(!isA&&!(ph.by===s.name&&ph.role===s.role))return err(res,403,"Удалить может автор или администратор");
+    const ph=DB.photos[mm[1]];if(!ph)return err(res,404,"Нет фото");if(!canTT(ph.tt))return noTT();if(!isA&&!(ph.by===s.name&&ph.role===s.role))return err(res,403,"Удалить может автор или администратор");
     try{fs.unlinkSync(path.join(PHOTOS,ph.file))}catch(e){}delete DB.photos[mm[1]];commit();journal(req,s,"Удалено фото",{tt:(DB.tt[ph.tt]||{}).name});return send(res,200,{ok:true});
   }
   // Excel
   if(M==="GET"&&(mm=p.match(/^\/api\/export\/([\w-]+)\/(prep|onsite)$/))){
-    if(isE)return err(res,403,"Нет прав");const [,id,sec]=mm,t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");
+    if(isE)return err(res,403,"Нет прав");const [,id,sec]=mm,t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");if(!canTT(id))return noTT();
     const buf=checklistXlsx(id,sec,s);const name=("Чек-лист "+(sec==="prep"?"подготовка":"отработка")+" - "+t.city+", "+t.name).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").slice(0,150)+".xlsx";
     journal(req,s,"Выгружен чек-лист в Excel",{tt:t.name,sec:K.SECX[sec]});res.writeHead(200,xlsxHeaders(name,buf.length));return res.end(buf);
   }
-  if(M==="GET"&&p==="/api/orders.xlsx"){if(isE)return err(res,403,"Нет прав");const buf=ordersXlsx();res.writeHead(200,xlsxHeaders("Сводка заказа по юрлицам "+K.isoD(new Date())+".xlsx",buf.length));return res.end(buf)}
+  if(M==="GET"&&p==="/api/orders.xlsx"){if(isE)return err(res,403,"Нет прав");const buf=ordersXlsx(isL&&s.tts?s.tts:null);res.writeHead(200,xlsxHeaders("Сводка заказа по юрлицам "+K.isoD(new Date())+".xlsx",buf.length));return res.end(buf)}
   // пользователи
   if(p.startsWith("/api/users")){
     if(!isA)return err(res,403,"Нет прав");
-    const pub=x=>({login:x.login,name:x.name,role:x.role,active:x.active});
+    const pub=x=>({login:x.login,name:x.name,role:x.role,active:x.active,tts:Array.isArray(x.tts)?x.tts:null});
+    const cleanTts=v=>v===null||v===undefined||v==="all"?null:(Array.isArray(v)?[...new Set(v.map(String).filter(id=>DB.tt[id]))]:null);
     if(M==="GET")return send(res,200,{users:Object.values(DB.users).map(pub)});
     const b=await body(req,1e4);
     if(M==="POST"){const login=String(b.login||"").trim();if(!/^[\w.-]{3,32}$/.test(login))return err(res,400,"Логин: 3–32 латинских буквы или цифры");if(DB.users[login.toLowerCase()])return err(res,409,"Такой логин уже есть");
       if(String(b.password||"").length<4)return err(res,400,"Пароль не короче 4 символов");if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");
-      DB.users[login.toLowerCase()]={login,name:String(b.name||login).trim().slice(0,80),role:b.role,active:true,...hashPass(b.password)};saveDB();journal(req,s,"Создан пользователь",{details:login+" · "+K.ROLE[b.role]});return send(res,200,{ok:true})}
+      DB.users[login.toLowerCase()]={login,name:String(b.name||login).trim().slice(0,80),role:b.role,active:true,tts:b.role==="lead"?cleanTts(b.tts):null,...hashPass(b.password)};saveDB();journal(req,s,"Создан пользователь",{details:login+" · "+K.ROLE[b.role]+(b.role==="lead"&&Array.isArray(b.tts)?" · ТТ: "+cleanTts(b.tts).length:"")});return send(res,200,{ok:true})}
     if(M==="PATCH"&&(mm=p.match(/^\/api\/users\/([\w.-]+)$/))){const x=DB.users[mm[1].toLowerCase()];if(!x)return err(res,404,"Нет пользователя");
       const admins=Object.values(DB.users).filter(y=>y.role==="admin"&&y.active);const self=x.login===s.login;const ch=[];
       if(b.role&&b.role!==x.role){if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");if(x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя убрать последнего администратора");x.role=b.role;ch.push("роль: "+K.ROLE[b.role])}
       if(typeof b.active==="boolean"&&b.active!==x.active){if(self)return err(res,409,"Нельзя отключить себя");if(!b.active&&x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя отключить последнего администратора");x.active=b.active;ch.push(b.active?"включён":"отключён");
         if(!b.active)Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login)delete SESS[k]})}
-      if(typeof b.name==="string"&&b.name.trim()){x.name=b.name.trim().slice(0,80);ch.push("имя: "+x.name)}
+      if(typeof b.name==="string"&&b.name.trim()&&b.name.trim()!==x.name){x.name=b.name.trim().slice(0,80);ch.push("имя: "+x.name)}
+      if(b.tts!==undefined){const nt=x.role==="lead"?cleanTts(b.tts):null;if(JSON.stringify(nt)!==JSON.stringify(x.tts||null)){x.tts=nt;ch.push(nt?"ТТ: "+nt.length:"ТТ: все")}}
       if(b.password){if(String(b.password).length<4)return err(res,400,"Пароль не короче 4 символов");Object.assign(x,hashPass(b.password));ch.push("сменён пароль");Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login&&k!==cookies(req).sid)delete SESS[k]})}
       saveDB();saveSess();journal(req,s,"Изменён пользователь",{details:x.login+": "+ch.join(", ")});return send(res,200,{ok:true})}
     return err(res,404,"Не найдено");
