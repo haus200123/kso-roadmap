@@ -1,7 +1,7 @@
 "use strict";
 /* Дорожная карта КСО — локальный сервер. Без внешних зависимостей: только Node.js 18+. */
 const http=require("http"),fs=require("fs"),path=require("path"),crypto=require("crypto"),os=require("os"),url=require("url");
-const {genLists}=require("./lib/template.js");
+const {genLists,WIKI_ROOT,TEMPLATE_VERSION}=require("./lib/template.js");
 const {buildXlsx}=require("./lib/xlsx.js");
 const K=require("./lib/common.js");
 
@@ -35,7 +35,12 @@ function loadDB(){
     mk("Admin","Администратор","admin","admin");mk("ITlead","Старший сотрудник","lead","lead");
     saveDB();console.log("Создана новая база данных: data\\db.json");
   }
-  DB.photos=DB.photos||{};DB.users=DB.users||{};
+  DB.photos=DB.photos||{};DB.users=DB.users||{};DB.comments=DB.comments||{};
+  if(DB.tplVersion!==TEMPLATE_VERSION){
+    Object.keys(DB.tt).forEach(id=>{DB.lists[id]=genLists(DB.tt[id]);DB.checks[id]={prep:{},onsite:{}};});
+    DB.photos={};DB.comments={};DB.tplVersion=TEMPLATE_VERSION;saveDB();
+    console.log("Чек-листы всех ТТ пересозданы по новому шаблону (версия "+TEMPLATE_VERSION+")");
+  }
 }
 let saveTimer=null;
 function saveDB(){atomicWrite(F.db,JSON.stringify(DB))}
@@ -99,17 +104,24 @@ const SECS=["prep","onsite"];
 function chk(id,sec,iid){return ((DB.checks[id]||{})[sec]||{})[iid]||{st:"none"}}
 function setChk(id,sec,iid,o){DB.checks[id]=DB.checks[id]||{prep:{},onsite:{}};DB.checks[id][sec]=DB.checks[id][sec]||{};DB.checks[id][sec][iid]={st:"none",by:"",role:"",at:"",cby:"",cat:"",note:"",...o}}
 function itemOf(id,sec,iid){return ((DB.lists[id]||{})[sec]||[]).find(i=>i.id===iid)}
+const ckey=(iid,sid)=>sid?iid+"~"+sid:iid;
+function isDone(id,sec,it){if(it.sub&&it.sub.length)return it.sub.every(x=>chk(id,sec,ckey(it.id,x.id)).st==="done");return chk(id,sec,it.id).st==="done"}
+function cleanSub(arr){return (Array.isArray(arr)?arr:[]).slice(0,60).map(x=>({id:String(x.id||newId("s")).slice(0,40),text:String(x.text||"").slice(0,500),link:safeLink(x.link)})).filter(x=>x.text)}
+function safeLink(u){u=String(u||"").trim().slice(0,600);return /^https?:\/\//i.test(u)?u:""}
 function newId(p){return p+Date.now().toString(36)+crypto.randomBytes(3).toString("hex")}
 const loginFails={};
 
 /* ---------- Excel ---------- */
 function checklistXlsx(id,sec,s){
-  const t=DB.tt[id],L=(DB.lists[id]||{})[sec]||[];
+  const t=DB.tt[id],L=(DB.lists[id]||{})[sec]||[],P=sec==="prep";
   const owner=(t.owner||{})[sec]||"",ex=(t.exec||{})[sec]||"";
+  const NC=P?5:4,last=P?"E":"D";
   const rows=[],merges=[];let r=0;
   const push=(cells,h)=>{rows.push({cells,h});return ++r};
   const m=(a,b)=>merges.push(a+r+":"+b+r);
-  const hl=(txt,st,h)=>{push([{v:txt,s:st},{s:st},{s:st},{s:st}],h);m("A","D")};
+  const fill=(v,st)=>{const c=[{v,s:st}];for(let i=1;i<NC;i++)c.push({s:st});return c};
+  const hl=(txt,st,h)=>{push(fill(txt,st),h);m("A",last)};
+  const H=(text,w)=>Math.max(30,Math.ceil(text.length/w)*15+8);
   hl("Чек-лист: "+K.SECX[sec],1,26);
   hl("ТТ: "+t.name+", "+t.city,2,20);
   hl("Формат: "+t.fmt+"   ·   Юрлицо: "+t.ul,9);
@@ -117,18 +129,22 @@ function checklistXlsx(id,sec,s){
   hl("Ответственный: "+(owner||"—")+"   ·   Исполнитель: "+(ex||"—"),9);
   const ql=K.qtyLine(t).join("; ");hl("Кассы: "+(ql||"—"),9,ql.length>90?32:18);
   push([]);
-  push([{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Примечание",s:8}],20);
+  push(P?[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Уточнять у",s:8},{v:"Примечание",s:8}]:[{v:"№",s:8},{v:"Пункт",s:8},{v:"✓",s:8},{v:"Примечание",s:8}],20);
   let n=0;
   K.groups(L).forEach(g=>{
-    push([{v:g.name,s:4},{s:4},{s:4},{s:4}],20);m("A","D");
-    g.items.forEach(i=>{n++;let text=(i.req?"* ":"")+K.tok(i.text,t);if(sec==="prep"&&t.date)text+="  (срок "+K.fd(K.addD(t.date,+i.d||0))+")";if(i.ph)text+="  [фото]";
-      push([{v:n,s:6},{v:text,s:3},{v:"☐",s:5},{v:"",s:3}],Math.max(30,Math.ceil(text.length/62)*15+8))});
+    push(fill(g.name,4),20);m("A",last);
+    g.items.forEach(i=>{n++;let text=(i.req?"* ":"")+K.tok(i.text,t);if(P&&t.date)text+="  (срок "+K.fd(K.addD(t.date,+i.d||0))+")";if(i.ph)text+="  [фото]";
+      const hasSub=i.sub&&i.sub.length;
+      const row=[{v:n,s:6},{v:text,s:hasSub?10:3},{v:hasSub?"":"☐",s:5}];if(P)row.push({v:i.who||"",s:3});row.push({v:"",s:3});
+      push(row,H(text,P?50:62));
+      (i.sub||[]).forEach((x,k)=>{const tx="    • "+K.tok(x.text,t);const sr=[{v:n+"."+(k+1),s:6},{v:tx,s:3},{v:"☐",s:5}];if(P)sr.push({v:"",s:3});sr.push({v:"",s:3});push(sr,H(tx,P?50:62))});
+    });
   });
-  push([]);hl("* — обязательный пункт; [фото] — приложить фото на сайте",7);push([]);
+  push([]);hl("* — обязательный пункт; [фото] — приложить фото на сайте; пункт с подзадачами закрыт, когда выполнены все подзадачи",7,28);push([]);
   hl("Инженер (ФИО): ________________________   Подпись: ____________   Дата: ____________",9,24);
   hl("Проверил (старший): ____________________   Подпись: ____________   Дата: ____________",9,24);
   hl("Выгружено "+K.stamp()+" · "+s.name,7);
-  return Buffer.from(buildXlsx({name:K.SECX[sec],cols:[6,64,8,24],rows,merges}));
+  return Buffer.from(buildXlsx({name:K.SECX[sec],cols:P?[6,54,7,18,18]:[6,64,7,22],rows,merges}));
 }
 function ordersXlsx(){
   const R=K.orderRows(DB.tt),C=K.ORDER_COLS;const rows=[],merges=["A1:"+String.fromCharCode(64+C.length)+"1"];
@@ -177,7 +193,7 @@ async function handle(req,res){
   }
   if(M==="GET"&&p==="/api/state"){
     const photos={};Object.entries(DB.photos).forEach(([k,v])=>photos[k]={tt:v.tt,sec:v.sec,item:v.item,by:v.by,role:v.role,at:v.at});
-    return send(res,200,{v:DB.v,tt:DB.tt,lists:DB.lists,checks:DB.checks,photos,today:K.isoD(new Date())});
+    return send(res,200,{v:DB.v,tt:DB.tt,lists:DB.lists,checks:DB.checks,photos,comments:DB.comments,wikiRoot:WIKI_ROOT,today:K.isoD(new Date())});
   }
   // ТТ
   let mm;
@@ -206,24 +222,27 @@ async function handle(req,res){
   if(M==="DELETE"&&(mm=p.match(/^\/api\/tt\/([\w-]+)$/))){
     if(!isA)return err(res,403,"Нет прав");const id=mm[1],t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");
     Object.entries(DB.photos).forEach(([k,v])=>{if(v.tt===id){try{fs.unlinkSync(path.join(PHOTOS,v.file))}catch(e){}delete DB.photos[k]}});
-    delete DB.tt[id];delete DB.lists[id];delete DB.checks[id];commit();journal(req,s,"Удалена ТТ",{tt:t.name});return send(res,200,{ok:true});
+    delete DB.tt[id];delete DB.lists[id];delete DB.checks[id];delete DB.comments[id];commit();journal(req,s,"Удалена ТТ",{tt:t.name});return send(res,200,{ok:true});
   }
   // чек-листы
   if(M==="PUT"&&(mm=p.match(/^\/api\/lists\/([\w-]+)\/(prep|onsite)$/))){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
     const b=await body(req,1e6);if(!Array.isArray(b.items))return err(res,400,"Нет пунктов");
     const before=(DB.lists[id]||{})[sec]||[];
-    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0))}:{})})).filter(i=>i.text);
+    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{})})).filter(i=>i.text);
     DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=L;commit();
     journal(req,s,"Изменён чек-лист",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`пунктов: ${before.length} → ${L.length}`});return send(res,200,{ok:true});
   }
   if(M==="POST"&&(mm=p.match(/^\/api\/lists\/([\w-]+)\/(prep|onsite)\/reset$/))){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
-    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=genLists(DB.tt[id])[sec];commit();journal(req,s,"Чек-лист пересоздан из шаблона",{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true});
+    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=genLists(DB.tt[id])[sec];if(DB.checks[id])DB.checks[id][sec]={};commit();journal(req,s,"Чек-лист пересоздан из шаблона",{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true});
   }
   if(M==="POST"&&p==="/api/check"){
-    const b=await body(req,1e4),{tt:id,sec,item:iid,action}=b;
-    if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");const it=itemOf(id,sec,iid);if(!it)return err(res,404,"Пункт не найден");
+    const b=await body(req,1e4),{tt:id,sec,action}=b;
+    if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");const it0=itemOf(id,sec,b.item);if(!it0)return err(res,404,"Пункт не найден");
+    let it=it0,iid=it0.id;
+    if(b.sub){const sb=(it0.sub||[]).find(x=>x.id===b.sub);if(!sb)return err(res,404,"Подзадача не найдена");it={text:it0.text+" → "+sb.text};iid=ckey(it0.id,sb.id)}
+    else if(it0.sub&&it0.sub.length)return err(res,409,"У пункта есть подзадачи — отметьте их, пункт закроется сам");
     if(isE&&sec!=="onsite")return err(res,403,"Инженер отмечает только отработку на ТТ");
     const c=chk(id,sec,iid),now=K.stamp(),me=isE?s.name:s.name+" ("+s.login+")";let msg="";
     if(action==="tick"){
@@ -242,6 +261,32 @@ async function handle(req,res){
       else{setChk(id,sec,iid,{...c,st:"rejected",cby:me,cat:now,note:String(b.note||"").slice(0,300)});msg="Отклонено"+(b.note?": "+b.note:"")}
     }else return err(res,400,"Неизвестное действие");
     commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
+  }
+  // подзадачи (админ и старший)
+  if(p==="/api/sub"&&["POST","PATCH","DELETE"].includes(M)){
+    if(!isA&&!isL)return err(res,403,"Подзадачи меняют администратор и старший");
+    const b=await body(req,1e4),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const it=itemOf(id,sec,b.item);if(!it)return err(res,404,"Пункт не найден");it.sub=it.sub||[];
+    let msg="";
+    if(M==="POST"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");it.sub.push({id:newId("s"),text,link:safeLink(b.link)});msg="Добавлена подзадача: "+text}
+    else{const i=it.sub.findIndex(x=>x.id===b.sub);if(i<0)return err(res,404,"Подзадача не найдена");
+      if(M==="PATCH"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");msg="Подзадача переименована: "+it.sub[i].text+" → "+text;it.sub[i].text=text;if(b.link!==undefined)it.sub[i].link=safeLink(b.link)}
+      else{msg="Удалена подзадача: "+it.sub[i].text;const k=ckey(it.id,it.sub[i].id);if(DB.checks[id]&&DB.checks[id][sec])delete DB.checks[id][sec][k];it.sub.splice(i,1)}}
+    commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
+  }
+  // комментарии (все)
+  if(M==="POST"&&p==="/api/comments"){
+    const b=await body(req,1e5),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const it=itemOf(id,sec,b.item);if(!it)return err(res,404,"Пункт не найден");
+    if(b.sub&&!(it.sub||[]).some(x=>x.id===b.sub))return err(res,404,"Подзадача не найдена");
+    const text=String(b.text||"").trim().slice(0,2000);if(!text)return err(res,400,"Пустой комментарий");
+    (DB.comments[id]=DB.comments[id]||[]).push({id:newId("c"),sec,key:ckey(it.id,b.sub),by:s.name,role:s.role,at:K.stamp(),text});
+    commit();journal(req,s,"Комментарий",{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id]),details:text.slice(0,200)});return send(res,200,{ok:true});
+  }
+  if(M==="DELETE"&&(mm=p.match(/^\/api\/comments\/([\w-]+)\/(c[\w]+)$/))){
+    const L=DB.comments[mm[1]]||[],i=L.findIndex(c=>c.id===mm[2]);if(i<0)return err(res,404,"Нет комментария");
+    if(!isA&&!(L[i].by===s.name&&L[i].role===s.role))return err(res,403,"Удалить может автор или администратор");
+    L.splice(i,1);commit();journal(req,s,"Удалён комментарий",{tt:(DB.tt[mm[1]]||{}).name});return send(res,200,{ok:true});
   }
   // фото
   if(M==="POST"&&p==="/api/photos"){
