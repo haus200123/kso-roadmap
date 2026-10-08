@@ -154,6 +154,12 @@ details.params summary{padding:9px 12px;cursor:pointer;font-weight:700;font-size
 .tp label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
 .tp input[type=checkbox]{width:16px;height:16px;margin:0;flex:none}
 .resp{color:var(--accent)}
+.adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border:1px dashed var(--line);border-radius:10px}
+.eds{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr) auto;gap:6px;align-items:center;padding:3px 0 3px 22px}
+.eds-add{display:flex;gap:6px;padding:4px 0 10px 22px;flex-wrap:wrap}
+.eds-add input{flex:1 1 220px}
+@media (max-width:700px){.eds{grid-template-columns:1fr auto}.eds > input:nth-child(2){grid-column:1/-1;grid-row:2}}
+.ico.danger{color:var(--bad);border-color:var(--bad)}
 .subs{margin-top:8px;border-left:2px solid var(--line);padding-left:10px;display:flex;flex-direction:column}
 .si{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px dashed var(--line-2)}
 .si:last-child{border-bottom:0}
@@ -205,7 +211,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(m,ms=3200){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",ms)}
 
-const S={me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
+const S={itemDel:null,userDel:null,me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
   lb:null,newTT:false,confirmDel:null,confirmReset:null,rejecting:null,paramsOpen:null,engTT:null,lastPending:null,offline:false,users:null,journal:null,jq:"",userEdit:null};
 try{S.engTT=sessionStorage.getItem("kso-eng-tt")}catch(e){}
 
@@ -280,11 +286,11 @@ let deferred=false;
 function soft(){if(editing())deferred=true;else render()}
 document.addEventListener("focusout",()=>setTimeout(()=>{if(deferred&&!editing()){deferred=false;render()}},0));
 /* ---------- черновики форм: введённое не теряется при обновлении страницы ---------- */
-const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,#jq,[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
+const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,#jq,[data-esnew],[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
 S.drafts={};S.dropDrafts=[];
 function draftKey(el){const d=el.dataset;
   if(d.tp)return "tp|"+d.tp+"|"+el.value;if(d.tpAll)return "tpall|"+d.tpAll;if(d.tpQ)return "tpq|"+d.tpQ;
-  if(d.cmtInput)return "cmt|"+d.cmtInput;if(d.subNew)return "subnew|"+d.subNew;if(d.subInput)return "subin|"+d.subInput;if(d.respInput)return "resp|"+d.respInput;
+  if(d.cmtInput)return "cmt|"+d.cmtInput;if(d.subNew)return "subnew|"+d.subNew;if(d.subInput)return "subin|"+d.subInput;if(d.respInput)return "resp|"+d.respInput;if(d.esnew)return "esnew|"+d.esnew;
   return el.id?"#"+el.id:null}
 function dropDrafts(...prefixes){S.dropDrafts.push(...prefixes);prefixes.forEach(p=>Object.keys(S.drafts).forEach(k=>{if(k.startsWith(p))delete S.drafts[k]}))}
 function snapDrafts(){document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app ")).forEach(el=>{if(el.type==="file")return;const k=draftKey(el);if(k)S.drafts[k]=el.type==="checkbox"?el.checked:el.value});
@@ -390,11 +396,12 @@ function ttBody(id){
     h+=`<datalist id="people-list">${ppl.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
   h+=paramsView(id);
   if(t.note)h+=`<div class="note"><b>Примечание:</b> ${esc(t.note)}</div>`;
-  if(isAdmin())h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn sm" data-edit="${id}">${S.edit===id?"Готово":"Редактировать пункты чек-листа"}</button>${S.edit===id?`<span class="sub">Метки в тексте подставляются из количеств ТТ: {skit} {csik} {kso} {ncr} {demCsik} {lin} {dem} {rKkt} {rTerm} {rCol} {oTerm} {oKkt} {oFn} {oCol} {oGaz} {ul}</span>`:""}</div>`;
+  if(isAdmin())h+=`<div class="adm-row">
+     <button class="btn sm" data-edit="${id}">${S.edit===id?"✓ Готово":"✎ Редактировать пункты и подпункты"}</button>
+     ${S.confirmReset===id?`<span class="sub">Пункты раздела «${SEC[sec]}» будут пересозданы из шаблона, отметки сбросятся.</span><button class="btn sm no" data-reset-ok="${id}">Пересоздать</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm" data-reset="${id}">↺ Пересоздать из шаблона</button>`}
+     ${S.confirmDel===id?`<span class="sub">Удалить ТТ «${esc(t.name)}» целиком: оба чек-листа, отметки, комментарии и фото?</span><button class="btn sm no" data-del-ok="${id}">Да, удалить ТТ</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm no" data-del-tt="${id}">🗑 Удалить ТТ</button>`}
+    </div>${S.edit===id?`<div class="sub">Метки в тексте подставляются из количеств ТТ: {skit} {csik} {kso} {ncr} {demCsik} {lin} {dem} {rKkt} {rTerm} {rCol} {oTerm} {oKkt} {oFn} {oCol} {oGaz} {ul}. Изменения касаются только этой ТТ — шаблон для новых ТТ не меняется.</div>`:""}`;
   h+=S.edit===id&&isAdmin()?editList(id):checkList(id);
-  if(isAdmin())h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line-2);padding-top:12px">
-     ${S.confirmReset===id?`<span class="sub">Пункты раздела будут пересозданы из шаблона.</span><button class="btn sm no" data-reset-ok="${id}">Пересоздать</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm" data-reset="${id}">Пересоздать пункты из шаблона</button>`}
-     ${S.confirmDel===id?`<span class="sub">Удалить ТТ со всеми чек-листами и фото?</span><button class="btn sm no" data-del-ok="${id}">Удалить</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm no" data-del-tt="${id}">Удалить ТТ</button>`}</div>`;
   return h+`</div>`;
 }
 const PF=[["name","Наименование / адрес","text"],["city","Город","text"],["fmt","Формат","text"],["ul","Юрлицо","text"],
@@ -455,7 +462,7 @@ function checkList(id){
       <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${sec==="prep"&&i.resp?`<span>Доп. ответственный: <b class="resp">${esc(i.resp)}</b></span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
       ${hasSub?"":rejectBox(key)}
       ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="${esc(au("/photos/"+p.id))}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
-      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
+      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()?(S.itemDel===key?`<button class="ico danger" data-item-del="${key}">Удалить пункт${hasSub?" с подпунктами":""}?</button>`:`<button class="ico" data-item-delask="${key}" aria-label="Удалить пункт">✕</button>`):""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
       ${isAdmin()&&sec==="prep"&&S.respEdit===key?`<div class="tools"><input type="text" list="people-list" data-resp-input="${key}" value="${esc(i.resp||"")}" placeholder="ФИО: впишите или выберите из списка" style="flex:1 1 240px"><button class="btn sm pri" data-resp-save="${key}">Сохранить</button>${i.resp?`<button class="btn sm no" data-resp-clear="${key}">Убрать</button>`:""}<button class="btn sm" data-act="resp-cancel">Отмена</button></div>`:""}
       ${cmtBox(id,sec,i.id,key)}
       ${subsHtml}
@@ -469,7 +476,10 @@ function editList(id){
     ${sec==="prep"?`<label class="sub" style="display:flex;align-items:center;gap:3px">Д-<input type="number" min="0" value="${+i.d||0}" data-ed="${id}|${k}|d" style="width:52px;padding:4px" aria-label="Дней до работ"></label>`:""}
     <span class="flags"><label><input type="checkbox" ${i.req?"checked":""} data-edc="${id}|${k}|req">обяз.</label>${sec==="onsite"?`<label><input type="checkbox" ${i.ph?"checked":""} data-edc="${id}|${k}|ph">фото</label>`:""}
      <button class="ico" data-mv="${id}|${k}|-1" ${k===0?"disabled":""} aria-label="Выше">↑</button><button class="ico" data-mv="${id}|${k}|1" ${k===L.length-1?"disabled":""} aria-label="Ниже">↓</button><button class="ico" data-rm="${id}|${k}" aria-label="Удалить пункт">✕</button></span></div>
-    <div class="ed2"><input type="text" value="${esc(i.link||"")}" data-ed="${id}|${k}|link" placeholder="Ссылка на инструкцию (https://…)" aria-label="Ссылка на инструкцию">${sec==="prep"?`<input type="text" value="${esc(i.who||"")}" data-ed="${id}|${k}|who" placeholder="У кого уточнять" aria-label="У кого уточнять">`:`<span class="sub" style="align-self:center">${(i.sub||[]).length?`подзадач: ${i.sub.length} (правятся в обычном режиме)`:""}</span>`}</div>`).join("")+
+    <div class="ed2"><input type="text" value="${esc(i.link||"")}" data-ed="${id}|${k}|link" placeholder="Ссылка на инструкцию (https://…)" aria-label="Ссылка на инструкцию">${sec==="prep"?`<input type="text" value="${esc(i.who||"")}" data-ed="${id}|${k}|who" placeholder="У кого уточнять" aria-label="У кого уточнять">`:`<span></span>`}</div>
+    ${(i.sub||[]).map((x,j)=>`<div class="eds"><input type="text" value="${esc(x.text)}" data-eds="${id}|${k}|${j}|text" aria-label="Текст подпункта"><input type="text" value="${esc(x.link||"")}" data-eds="${id}|${k}|${j}|link" placeholder="Ссылка (необязательно)" aria-label="Ссылка подпункта">
+      <span class="flags"><button class="ico" data-esmv="${id}|${k}|${j}|-1" ${j===0?"disabled":""} aria-label="Выше">↑</button><button class="ico" data-esmv="${id}|${k}|${j}|1" ${j===i.sub.length-1?"disabled":""} aria-label="Ниже">↓</button><button class="ico" data-esrm="${id}|${k}|${j}" aria-label="Удалить подпункт">✕</button></span></div>`).join("")}
+    <div class="eds-add"><input type="text" data-esnew="${id}|${k}" placeholder="＋ Новый подпункт к «${esc(i.text.slice(0,40))}${i.text.length>40?"…":""}»"><button class="btn sm" data-esadd="${id}|${k}">Добавить подпункт</button></div>`).join("")+
    `<div class="addrow"><input type="text" id="add-text" placeholder="Новый пункт"><input type="text" id="add-g" list="gnames" placeholder="Группа" value="${esc(gn[gn.length-1]||"")}" style="flex:0 1 180px">${sec==="prep"?`<input type="number" id="add-d" min="0" value="3" style="width:70px" aria-label="Д-">`:""}<button class="btn pri" data-add="${id}">Добавить пункт</button></div>`;
 }
 const NF=[["skit","Установка S.kit","2"],["bag","Пакетн. зона S.kit (1/2)","авто"],["csik","Перенос CSIK","0"],["csikFrom","CSIK снимаем с ТТ","","text"],
@@ -525,7 +535,7 @@ function usersView(){
      <td>${ttLabel(u)}</td>
      <td>${u.active?'<span class="badge" style="background:var(--ok-soft);color:var(--ok)">активен</span>':'<span class="badge bad">отключён</span>'}</td>
      <td style="white-space:nowrap">${ed?`<input type="password" id="ue-pass" autocomplete="new-password" placeholder="Новый пароль (не менять — пусто)" style="width:220px"> <button class="btn sm pri" data-user-save="${esc(u.login)}">Сохранить</button> <button class="btn sm" data-act="user-cancel">Отмена</button>`:
-       `<button class="btn sm" data-user-edit="${esc(u.login)}">Изменить</button> ${u.login===S.me.login?"":`<button class="btn sm ${u.active?"no":"ok"}" data-user-active="${esc(u.login)}|${u.active?0:1}">${u.active?"Отключить":"Включить"}</button>`}`}</td></tr>
+       `<button class="btn sm" data-user-edit="${esc(u.login)}">Изменить</button> ${u.login===S.me.login?"":`<button class="btn sm ${u.active?"no":"ok"}" data-user-active="${esc(u.login)}|${u.active?0:1}">${u.active?"Отключить":"Включить"}</button> ${S.userDel===u.login?`<button class="btn sm no" data-user-del="${esc(u.login)}">Удалить навсегда?</button><button class="btn sm" data-act="user-del-cancel">Нет</button>`:`<button class="btn sm no" data-user-delask="${esc(u.login)}">🗑 Удалить</button>`}`}`}</td></tr>
      ${ed?`<tr><td colspan="6"><div id="ue-tpwrap" ${u.role==="lead"?"":"hidden"}><b>ТТ, которые видит старший</b>${ttPicker("ue",u.tts)}</div></td></tr>`:""}`}).join("")}
    </tbody></table></div>
    <div class="pick" style="margin-top:14px"><b>Новый пользователь</b>
@@ -608,6 +618,15 @@ document.addEventListener("click",async e=>{
   if(d.rm){const [id,k]=d.rm.split("|");const L=items(id,S.view).slice();L.splice(+k,1);setList(id,L);return}
   if(d.add){const id=d.add,text=$("#add-text").value.trim();if(!text){$("#add-text").focus();return}const L=items(id,S.view).slice();const it={id:"",g:$("#add-g").value.trim()||"Прочее",text,req:true,ph:false};if(S.view==="prep")it.d=Math.max(0,+$("#add-d").value||0);
     let pos=-1;L.forEach((x,j)=>{if(x.g===it.g)pos=j});if(pos>=0)L.splice(pos+1,0,it);else L.push(it);setList(id,L);return}
+  if(d.itemDelask){S.itemDel=d.itemDelask;render();setTimeout(()=>{if(S.itemDel===d.itemDelask){S.itemDel=null;render()}},5000);return}
+  if(d.itemDel){const [id,sec,item]=d.itemDel.split("|");S.itemDel=null;S.view=sec;const L=items(id,sec).filter(x=>x.id!==item);setList(id,L).then(r=>{if(r)toast("Пункт удалён")});return}
+  if(d.esmv){const [id,k,j,dir]=d.esmv.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).slice()}));const A=L[+k].sub,a=+j,b=a+ +dir;[A[a],A[b]]=[A[b],A[a]];setList(id,L);return}
+  if(d.esrm){const [id,k,j]=d.esrm.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).slice()}));L[+k].sub.splice(+j,1);setList(id,L);return}
+  if(d.esadd){const inp=document.querySelector(`[data-esnew="${d.esadd}"]`);const text=(inp?.value||"").trim();if(!text){inp?.focus();return}
+    const [id,k]=d.esadd.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).slice()}));L[+k].sub.push({id:"",text,link:""});inp.value="";dropDrafts("esnew|"+d.esadd);setList(id,L);return}
+  if(d.userDelask){S.userDel=d.userDelask;render();return}
+  if(d.act==="user-del-cancel"){S.userDel=null;render();return}
+  if(d.userDel){const l=d.userDel;S.userDel=null;try{await api("DELETE","/api/users/"+encodeURIComponent(l));toast("Пользователь "+l+" удалён");S.users=null;render()}catch(err){toast(err.message,5000);render()}return}
   if(d.reset){S.confirmReset=d.reset;S.confirmDel=null;render();return}
   if(d.resetOk){const id=d.resetOk;S.confirmReset=null;act("POST",`/api/lists/${id}/${S.view}/reset`,{},"Пункты пересозданы из шаблона");return}
   if(d.delTt){S.confirmDel=d.delTt;S.confirmReset=null;render();return}
@@ -641,6 +660,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.subNew){e.preventDefault();document.querySelector(`[data-sub-save="${e.target.dataset.subNew}"]`)?.click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.subInput){e.preventDefault();document.querySelector(`[data-sub-upd="${e.target.dataset.subInput}"]`)?.click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.respInput){e.preventDefault();document.querySelector(`[data-resp-save="${e.target.dataset.respInput}"]`)?.click()}
+  if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.esnew){e.preventDefault();document.querySelector(`[data-esadd="${e.target.dataset.esnew}"]`)?.click()}
   if(e.key==="Enter"&&e.target.id==="jq"){S.jq=e.target.value;S.journal=null;render()}
 });
 document.addEventListener("toggle",e=>{if(e.target.dataset&&e.target.dataset.params)S.paramsOpen=e.target.open?e.target.dataset.params:null},true);
@@ -662,6 +682,7 @@ document.addEventListener("change",async e=>{
   if(d.exec){act("PATCH","/api/tt/"+d.exec,{exec:{[S.view]:el.value}});return}
   if(d.f){const [id,k]=d.f.split("|");const ty=(PF.find(x=>x[0]===k)||[])[2];act("PATCH","/api/tt/"+id,{[k]:ty==="n"?+el.value:el.value});return}
   if(d.ed){const [id,k,f]=d.ed.split("|");const L=items(id,S.view).map(x=>({...x}));let v=el.value;if(f==="d")v=Math.max(0,+v||0);else v=v.trim();if(f==="text"&&!v){render();return}L[+k][f]=v;setList(id,L);return}
+  if(d.eds){const [id,k,j,f]=d.eds.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).map(y=>({...y}))}));const v=el.value.trim();if(f==="text"&&!v){render();return}L[+k].sub[+j][f]=v;setList(id,L);return}
   if(d.edc){const [id,k,f]=d.edc.split("|");const L=items(id,S.view).map(x=>({...x}));L[+k][f]=el.checked;setList(id,L);return}
   if(d.upload){const [tt,sec,item]=d.upload.split("|");const f=el.files[0];if(!f)return;toast("Загружаю фото…",15000);
     try{const data=await shrink(f);await act("POST","/api/photos",{tt,sec,item,data},"Фото добавлено")}catch(err){toast("Не удалось прочитать файл")}return}

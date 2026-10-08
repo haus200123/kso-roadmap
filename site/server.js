@@ -110,6 +110,15 @@ function chk(id,sec,iid){return ((DB.checks[id]||{})[sec]||{})[iid]||{st:"none"}
 function setChk(id,sec,iid,o){DB.checks[id]=DB.checks[id]||{prep:{},onsite:{}};DB.checks[id][sec]=DB.checks[id][sec]||{};DB.checks[id][sec][iid]={st:"none",by:"",role:"",at:"",cby:"",cat:"",note:"",...o}}
 function itemOf(id,sec,iid){return ((DB.lists[id]||{})[sec]||[]).find(i=>i.id===iid)}
 const ckey=(iid,sid)=>sid?iid+"~"+sid:iid;
+/* Удаляет отметки, комментарии и фото пунктов и подпунктов, которых больше нет в чек-листе */
+function cleanupOrphans(id,sec){
+  const keys=new Set();((DB.lists[id]||{})[sec]||[]).forEach(i=>{keys.add(i.id);(i.sub||[]).forEach(x=>keys.add(ckey(i.id,x.id)))});
+  const items=new Set(((DB.lists[id]||{})[sec]||[]).map(i=>i.id));let n=0;
+  const C=(DB.checks[id]||{})[sec]||{};Object.keys(C).forEach(k=>{if(!keys.has(k)){delete C[k];n++}});
+  if(DB.comments[id]){const before=DB.comments[id].length;DB.comments[id]=DB.comments[id].filter(c=>c.sec!==sec||keys.has(c.key));n+=before-DB.comments[id].length}
+  Object.entries(DB.photos).forEach(([pid,ph])=>{if(ph.tt===id&&ph.sec===sec&&!items.has(ph.item)){try{fs.unlinkSync(path.join(PHOTOS,ph.file))}catch(e){}delete DB.photos[pid];n++}});
+  return n;
+}
 function isDone(id,sec,it){if(it.sub&&it.sub.length)return it.sub.every(x=>chk(id,sec,ckey(it.id,x.id)).st==="done");return chk(id,sec,it.id).st==="done"}
 function cleanSub(arr){return (Array.isArray(arr)?arr:[]).slice(0,60).map(x=>({id:String(x.id||newId("s")).slice(0,40),text:String(x.text||"").slice(0,500),link:safeLink(x.link)})).filter(x=>x.text)}
 function safeLink(u){u=String(u||"").trim().slice(0,600);return /^https?:\/\//i.test(u)?u:""}
@@ -244,12 +253,12 @@ async function handle(req,res){
     const b=await body(req,1e6);if(!Array.isArray(b.items))return err(res,400,"Нет пунктов");
     const before=(DB.lists[id]||{})[sec]||[];
     const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{}),resp:String(i.resp||"").slice(0,120)})).filter(i=>i.text);
-    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=L;commit();
-    journal(req,s,"Изменён чек-лист",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`пунктов: ${before.length} → ${L.length}`});return send(res,200,{ok:true});
+    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=L;const gone=cleanupOrphans(id,sec);commit();
+    journal(req,s,"Изменён чек-лист",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`пунктов: ${before.length} → ${L.length}`+(gone?`; удалено отметок/комментариев/фото: ${gone}`:"")});return send(res,200,{ok:true});
   }
   if(M==="POST"&&(mm=p.match(/^\/api\/lists\/([\w-]+)\/(prep|onsite)\/reset$/))){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
-    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=genLists(DB.tt[id])[sec];if(DB.checks[id])DB.checks[id][sec]={};commit();journal(req,s,"Чек-лист пересоздан из шаблона",{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true});
+    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=genLists(DB.tt[id])[sec];if(DB.checks[id])DB.checks[id][sec]={};cleanupOrphans(id,sec);commit();journal(req,s,"Чек-лист пересоздан из шаблона",{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true});
   }
   if(M==="POST"&&p==="/api/check"){
     const b=await body(req,1e4),{tt:id,sec,action}=b;
@@ -293,7 +302,7 @@ async function handle(req,res){
     if(M==="POST"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");it.sub.push({id:newId("s"),text,link:safeLink(b.link)});msg="Добавлена подзадача: "+text}
     else{const i=it.sub.findIndex(x=>x.id===b.sub);if(i<0)return err(res,404,"Подзадача не найдена");
       if(M==="PATCH"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");msg="Подзадача переименована: "+it.sub[i].text+" → "+text;it.sub[i].text=text;if(b.link!==undefined)it.sub[i].link=safeLink(b.link)}
-      else{msg="Удалена подзадача: "+it.sub[i].text;const k=ckey(it.id,it.sub[i].id);if(DB.checks[id]&&DB.checks[id][sec])delete DB.checks[id][sec][k];it.sub.splice(i,1)}}
+      else{msg="Удалена подзадача: "+it.sub[i].text;it.sub.splice(i,1);cleanupOrphans(id,sec)}}
     commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
   }
   // комментарии (все)
@@ -349,6 +358,11 @@ async function handle(req,res){
       if(b.tts!==undefined){const nt=x.role==="lead"?cleanTts(b.tts):null;if(JSON.stringify(nt)!==JSON.stringify(x.tts||null)){x.tts=nt;ch.push(nt?"ТТ: "+nt.length:"ТТ: все")}}
       if(b.password){if(String(b.password).length<4)return err(res,400,"Пароль не короче 4 символов");Object.assign(x,hashPass(b.password));ch.push("сменён пароль");Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login&&k!==tokOf(req))delete SESS[k]})}
       if(ch.length)commit();saveSess();journal(req,s,"Изменён пользователь",{details:x.login+": "+ch.join(", ")});return send(res,200,{ok:true})}
+    if(M==="DELETE"&&(mm=p.match(/^\/api\/users\/([\w.-]+)$/))){const key=mm[1].toLowerCase(),x=DB.users[key];if(!x)return err(res,404,"Нет пользователя");
+      if(x.login===s.login)return err(res,409,"Нельзя удалить самого себя");
+      if(x.role==="admin"&&Object.values(DB.users).filter(y=>y.role==="admin"&&y.active&&y!==x).length<1)return err(res,409,"Нельзя удалить последнего администратора");
+      delete DB.users[key];Object.keys(SESS).forEach(k=>{if((SESS[k].login||"").toLowerCase()===key)delete SESS[k]});saveSess();commit();
+      journal(req,s,"Удалён пользователь",{details:x.login+" · "+x.name+" · "+K.ROLE[x.role]});return send(res,200,{ok:true})}
     return err(res,404,"Не найдено");
   }
   if(M==="GET"&&p==="/api/journal"){if(!isA)return err(res,403,"Нет прав");return send(res,200,{rows:readJournal(Math.min(2000,+u.query.limit||500),String(u.query.q||""))})}
