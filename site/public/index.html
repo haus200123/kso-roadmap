@@ -71,7 +71,7 @@ input[type=text],input[type=password],input[type=date],input[type=search],input[
 .notif h3{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid var(--line)}
 .ni{padding:10px 14px;border-bottom:1px solid var(--line-2);display:flex;flex-direction:column;gap:6px}
 .ni .acts{display:flex;gap:6px;flex-wrap:wrap}
-.offline{background:var(--bad);color:#fff;text-align:center;font-size:12.5px;padding:4px}
+.offline{background:var(--bad);color:#fff;text-align:center;font-size:13.5px;font-weight:600;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
 @media (max-width:1250px){.tabs{order:3;flex:1 1 100%}.top .wrap{justify-content:space-between}}
 
 main{padding-block:16px 60px}
@@ -193,6 +193,7 @@ a.ico{text-decoration:none}
 </style>
 </head>
 <body>
+<div id="net-root" style="position:fixed;left:0;right:0;bottom:0;z-index:80"></div>
 <div id="app"></div>
 <div id="toast-root"></div>
 <script src="/lib/common.js"></script>
@@ -208,11 +209,20 @@ const S={me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",c
   lb:null,newTT:false,confirmDel:null,confirmReset:null,rejecting:null,paramsOpen:null,engTT:null,lastPending:null,offline:false,users:null,journal:null,jq:"",userEdit:null};
 try{S.engTT=sessionStorage.getItem("kso-eng-tt")}catch(e){}
 
+/* ---------- вход: отдельная сессия для каждого окна ---------- */
+const TK="kso-tok",RK="kso-remember";
+function getTok(){let t=null;try{t=sessionStorage.getItem(TK)}catch(_){}if(t)return t;
+  try{const r=JSON.parse(localStorage.getItem(RK)||"null");if(r&&r.exp>Date.now()&&r.tok){try{sessionStorage.setItem(TK,r.tok)}catch(_){}return r.tok}if(r)localStorage.removeItem(RK)}catch(_){}return null}
+function setTok(t,remExp){try{sessionStorage.setItem(TK,t)}catch(_){}if(remExp){try{localStorage.setItem(RK,JSON.stringify({tok:t,exp:remExp}))}catch(_){}}}
+function clearTok(){let t=null;try{t=sessionStorage.getItem(TK);sessionStorage.removeItem(TK)}catch(_){}
+  try{const r=JSON.parse(localStorage.getItem(RK)||"null");if(r&&(!t||r.tok===t))localStorage.removeItem(RK)}catch(_){}}
+function au(path){const t=getTok();return t?path+(path.includes("?")?"&":"?")+"s="+encodeURIComponent(t):path}
 /* ---------- сервер ---------- */
 async function api(method,path,data){
-  const r=await fetch(path,{method,headers:data?{"Content-Type":"application/json"}:{},body:data?JSON.stringify(data):undefined,credentials:"same-origin"});
+  const h={};if(data)h["Content-Type"]="application/json";const tk=getTok();if(tk)h["X-KSO-Token"]=tk;
+  const r=await fetch(path,{method,headers:h,body:data?JSON.stringify(data):undefined,credentials:"omit",cache:"no-store"});
   let j={};try{j=await r.json()}catch(e){}
-  if(r.status===401&&path!=="/api/login"){S.me=null;render();throw new Error(j.error||"Войдите заново")}
+  if(r.status===401&&path!=="/api/login"){clearTok();if(es)es.close();S.me=null;setOffline(false);S.loaded=false;render();throw new Error(j.error||"Войдите заново")}
   if(!r.ok)throw new Error(j.error||"Ошибка "+r.status);
   return j;
 }
@@ -220,18 +230,20 @@ async function act(method,path,data,okMsg){try{const j=await api(method,path,dat
 let reloading=null;
 async function reload(){
   if(reloading)return reloading;
-  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";const changed=!S.loaded||S.offline||j.v!==S.v0;S.v0=j.v;S.loaded=true;S.offline=false;notifyPending();if(changed)soft()}finally{reloading=null}})();
+  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";const changed=!S.loaded||j.v!==S.v0;S.v0=j.v;S.loaded=true;setOffline(false);notifyPending();if(changed){if(S.view==="users"&&S.users&&isAdmin())refreshUsers();soft()}}finally{reloading=null}})();
   return reloading;
 }
-let es=null;
+let es=null,esRetry=null;
+/* Плашка «нет связи» живёт отдельно от страницы: появляется и пропадает сразу, даже пока вы печатаете */
+function setOffline(v){S.offline=v;const r=$("#net-root");if(r)r.innerHTML=v&&S.me?`<div class="offline">Нет связи с сервером — изменения не сохраняются. Проверьте, что сайт запущен.</div>`:""}
 function live(){
   if(es)es.close();
-  es=new EventSource("/api/events");
+  es=new EventSource(au("/api/events"));
   es.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.v!==S.v)reload().catch(()=>{})}catch(_){}};
-  es.onerror=()=>{S.offline=true;soft()};
-  es.onopen=()=>{if(S.offline){S.offline=false;reload().catch(()=>{})}};
+  es.onerror=()=>{setOffline(true);if(es.readyState===2){clearTimeout(esRetry);esRetry=setTimeout(()=>{if(S.me)live()},5000)}};
+  es.onopen=()=>{reload().catch(()=>{})};
 }
-setInterval(()=>{if(S.me)reload().catch(()=>{S.offline=true;soft()})},30000);
+setInterval(()=>{if(S.me)reload().catch(()=>setOffline(true))},30000);
 
 /* ---------- вычисления ---------- */
 const role=()=>S.me&&S.me.role;
@@ -264,7 +276,7 @@ let deferred=false;
 function soft(){if(editing())deferred=true;else render()}
 document.addEventListener("focusout",()=>setTimeout(()=>{if(deferred&&!editing()){deferred=false;render()}},0));
 /* ---------- черновики форм: введённое не теряется при обновлении страницы ---------- */
-const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
+const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,#jq,[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
 S.drafts={};S.dropDrafts=[];
 function draftKey(el){const d=el.dataset;
   if(d.tp)return "tp|"+d.tp+"|"+el.value;if(d.tpAll)return "tpall|"+d.tpAll;if(d.tpQ)return "tpq|"+d.tpQ;
@@ -311,7 +323,7 @@ const BELL=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 function tabsFor(){const t=[["onsite",SEC.onsite]];if(!isEng())t.push(["prep",SEC.prep],["orders","Сводка заказа"]);if(isAdmin())t.push(["users","Пользователи"],["journal","Журнал"]);return t}
 function headerView(){
   const pend=isLead()?allPending():[];
-  return `${S.offline?`<div class="offline">Нет связи с сервером — изменения не сохраняются. Проверьте, что сайт запущен.</div>`:""}<header class="top"><div class="wrap">
+  return `<header class="top"><div class="wrap">
     <div class="brand"><span class="brand-mark">КСО</span><span>Дорожная карта</span></div>
     <nav class="tabs" role="tablist">${tabsFor().map(([k,l])=>`<button class="tab" role="tab" data-view="${k}" aria-selected="${S.view===k}">${l}</button>`).join("")}</nav>
     <div class="who">
@@ -368,7 +380,7 @@ function ttBody(id){
   if(!isEng())h+=`<div class="bar-row">
       <label>Ответственный (назначает администратор)${isAdmin()?`<input type="text" list="names" value="${esc(owner)}" data-owner="${id}" placeholder="ФИО">`:`<span style="padding:7px 0">${esc(owner||"не назначен")}</span>`}</label>
       <label>Исполнитель (назначает старший)<input type="text" list="names" value="${esc(ex)}" data-exec="${id}" placeholder="ФИО"></label>
-      <a class="btn" href="/api/export/${id}/${sec}" download>Выгрузить в Excel</a>
+      <a class="btn" href="${esc(au(`/api/export/${id}/${sec}`))}" download>Выгрузить в Excel</a>
      </div><datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`;
   if(isAdmin()&&S.view==="prep"){const ppl=[...new Set([...S.people,...Object.values(S.TT).flatMap(x=>[x.owner?.prep,x.owner?.onsite,x.exec?.prep,x.exec?.onsite]),...Object.values(S.LISTS).flatMap(l=>(l.prep||[]).map(i=>i.resp))].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
     h+=`<datalist id="people-list">${ppl.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
@@ -438,7 +450,7 @@ function checkList(id){
      <div><div class="tx">${i.req?'<span class="req" title="Обязательный пункт">*</span> ':''}${esc(tok(i.text,t))}</div>
       <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${sec==="prep"&&i.resp?`<span>Доп. ответственный: <b class="resp">${esc(i.resp)}</b></span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
       ${hasSub?"":rejectBox(key)}
-      ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="/photos/${p.id}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
+      ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="${esc(au("/photos/"+p.id))}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
       <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
       ${isAdmin()&&sec==="prep"&&S.respEdit===key?`<div class="tools"><input type="text" list="people-list" data-resp-input="${key}" value="${esc(i.resp||"")}" placeholder="ФИО: впишите или выберите из списка" style="flex:1 1 240px"><button class="btn sm pri" data-resp-save="${key}">Сохранить</button>${i.resp?`<button class="btn sm no" data-resp-clear="${key}">Убрать</button>`:""}<button class="btn sm" data-act="resp-cancel">Отмена</button></div>`:""}
       ${cmtBox(id,sec,i.id,key)}
@@ -471,7 +483,7 @@ function newTTView(){
 function ordersView(){
   if(!S.loaded)return `<div class="empty">Загружаю…</div>`;
   const R=orderRows(S.TT),C=ORDER_COLS,tot={};C.slice(1).forEach(([k])=>tot[k]=R.reduce((a,x)=>a+x[k],0));
-  return `<div class="toolbar" style="justify-content:space-between"><h1 class="pg" style="margin:0">Сводка заказа по юрлицам</h1><a class="btn" href="/api/orders.xlsx" download>Выгрузить в Excel</a></div>
+  return `<div class="toolbar" style="justify-content:space-between"><h1 class="pg" style="margin:0">Сводка заказа по юрлицам</h1><a class="btn" href="${esc(au("/api/orders.xlsx"))}" download>Выгрузить в Excel</a></div>
    <div class="panel scroll"><table><thead><tr>${C.map(([k,l])=>`<th class="${k==="ul"?"":"r"}">${l}</th>`).join("")}</tr></thead><tbody>
    ${R.map(r=>`<tr>${C.map(([k])=>k==="ul"?`<td><b>${esc(r.ul)}</b></td>`:`<td class="r num">${r[k]||"—"}</td>`).join("")}</tr>`).join("")}
    <tr class="tot"><td>Итого</td>${C.slice(1).map(([k])=>`<td class="r num">${tot[k]}</td>`).join("")}</tr></tbody></table></div>
@@ -504,20 +516,21 @@ function usersView(){
   return `<h1 class="pg">Пользователи</h1>
    <div class="panel scroll"><table><thead><tr><th>Логин</th><th>Имя</th><th>Роль</th><th>ТТ</th><th>Статус</th><th></th></tr></thead><tbody>
    ${S.users.map(u=>{const ed=S.userEdit===u.login;return `<tr><td class="num">${esc(u.login)}</td>
-     <td>${ed?`<input type="text" id="ue-name" value="${esc(u.name)}">`:esc(u.name)}</td>
+     <td>${ed?`<input type="text" id="ue-name" autocomplete="off" value="${esc(u.name)}">`:esc(u.name)}</td>
      <td>${ed?`<select id="ue-role"><option value="lead" ${u.role==="lead"?"selected":""}>Старший</option><option value="admin" ${u.role==="admin"?"selected":""}>Администратор</option></select>`:ROLE[u.role]}</td>
      <td>${ttLabel(u)}</td>
      <td>${u.active?'<span class="badge" style="background:var(--ok-soft);color:var(--ok)">активен</span>':'<span class="badge bad">отключён</span>'}</td>
-     <td style="white-space:nowrap">${ed?`<input type="password" id="ue-pass" placeholder="Новый пароль (не менять — пусто)" style="width:220px"> <button class="btn sm pri" data-user-save="${esc(u.login)}">Сохранить</button> <button class="btn sm" data-act="user-cancel">Отмена</button>`:
+     <td style="white-space:nowrap">${ed?`<input type="password" id="ue-pass" autocomplete="new-password" placeholder="Новый пароль (не менять — пусто)" style="width:220px"> <button class="btn sm pri" data-user-save="${esc(u.login)}">Сохранить</button> <button class="btn sm" data-act="user-cancel">Отмена</button>`:
        `<button class="btn sm" data-user-edit="${esc(u.login)}">Изменить</button> ${u.login===S.me.login?"":`<button class="btn sm ${u.active?"no":"ok"}" data-user-active="${esc(u.login)}|${u.active?0:1}">${u.active?"Отключить":"Включить"}</button>`}`}</td></tr>
      ${ed?`<tr><td colspan="6"><div id="ue-tpwrap" ${u.role==="lead"?"":"hidden"}><b>ТТ, которые видит старший</b>${ttPicker("ue",u.tts)}</div></td></tr>`:""}`}).join("")}
    </tbody></table></div>
    <div class="pick" style="margin-top:14px"><b>Новый пользователь</b>
-    <div class="bar-row"><label>Логин (латиница)<input type="text" id="nu-login"></label><label>Имя<input type="text" id="nu-name"></label><label>Пароль<input type="password" id="nu-pass"></label>
+    <div class="bar-row"><label>Логин (латиница)<input type="text" id="nu-login" autocomplete="off" autocapitalize="off" spellcheck="false"></label><label>Имя<input type="text" id="nu-name" autocomplete="off"></label><label>Пароль<input type="password" id="nu-pass" autocomplete="new-password"></label>
      <label>Роль<select id="nu-role"><option value="lead">Старший</option><option value="admin">Администратор</option></select></label><button class="btn pri" data-act="user-add">Добавить</button></div>
     <div id="nu-tpwrap"><b>ТТ, которые будет видеть старший</b>${ttPicker("nu",null)}</div>
     <div class="sub">Инженерам учётные записи не нужны: они входят по фамилии и имени. Администратор видит все ТТ.</div></div>`;
 }
+async function refreshUsers(){try{S.users=(await api("GET","/api/users")).users;soft()}catch(e){}}
 async function loadUsers(){try{S.users=(await api("GET","/api/users")).users}catch(e){S.users=[];toast(e.message)}render()}
 function journalView(){
   if(!S.journal){loadJournal();return `<div class="empty">Загружаю…</div>`}
@@ -530,8 +543,8 @@ async function loadJournal(){try{S.journal=(await api("GET","/api/journal?limit=
 function lbView(){
   const p=Object.values(S.PH).flat().find(x=>x.id===S.lb);if(!p)return "";
   const canDel=isAdmin()||(p.by===S.me.name&&p.role===S.me.role);
-  return `<div class="lb" data-act="lb-close"><img src="/photos/${p.id}" alt="Фото"><div class="cap">${esc(p.by)} · ${esc(ROLE[p.role]||"")} · ${esc(p.at)}</div>
-   <div class="acts"><a class="btn sm" href="/photos/${p.id}" target="_blank" rel="noopener">Открыть оригинал</a>${canDel?`<button class="btn sm no" data-photo-del="${p.id}">Удалить фото</button>`:""}<button class="btn sm" data-act="lb-close">Закрыть</button></div></div>`;
+  return `<div class="lb" data-act="lb-close"><img src="${esc(au("/photos/"+p.id))}" alt="Фото"><div class="cap">${esc(p.by)} · ${esc(ROLE[p.role]||"")} · ${esc(p.at)}</div>
+   <div class="acts"><a class="btn sm" href="${esc(au("/photos/"+p.id))}" target="_blank" rel="noopener">Открыть оригинал</a>${canDel?`<button class="btn sm no" data-photo-del="${p.id}">Удалить фото</button>`:""}<button class="btn sm" data-act="lb-close">Закрыть</button></div></div>`;
 }
 
 /* ---------- действия ---------- */
@@ -543,21 +556,21 @@ async function shrink(file){
 }
 function setList(id,L){S.LISTS[id]={...(S.LISTS[id]||{}),[S.view]:L};render();return act("PUT",`/api/lists/${id}/${S.view}`,{items:L})}
 async function start(){
-  try{const m=await api("GET","/api/me");S.me=m.role?m:null}catch(e){S.me=null}
+  S.me=null;if(getTok()){try{const m=await api("GET","/api/me");S.me=m.role?m:null;if(!S.me)clearTok()}catch(e){S.me=null}}
   if(S.me){S.view="onsite";render();await reload().catch(e=>toast(e.message));live()}else render();
 }
 document.addEventListener("submit",async e=>{
   if(e.target.id!=="login-form")return;e.preventDefault();
-  try{await api("POST","/api/login",{login:$("#lg-login").value,password:$("#lg-pass").value,remember:$("#lg-rem").checked});start()}
+  try{const rem=$("#lg-rem").checked;const j=await api("POST","/api/login",{login:$("#lg-login").value,password:$("#lg-pass").value,remember:rem});clearTok();setTok(j.token,rem?j.exp:null);S.drafts={};start()}
   catch(err){$("#lg-err").textContent=err.message}
 });
 document.addEventListener("click",async e=>{
   const el=e.target.closest("button,[data-toggle],.lb");if(!el)return;const d=el.dataset;
   if(el.id==="lg-eng"){const v=KSO.checkFio($("#lg-fio").value);if(v.error){$("#lg-fio-err").textContent=v.error;$("#lg-fio").classList.add("bad");$("#lg-fio").focus();return}
-    try{await api("POST","/api/login-engineer",{name:v.name});start()}catch(err){$("#lg-fio-err").textContent=err.message}return}
+    try{const j=await api("POST","/api/login-engineer",{name:v.name});clearTok();setTok(j.token,null);S.drafts={};start()}catch(err){$("#lg-fio-err").textContent=err.message}return}
   if(d.act==="lb-close"){if(e.target.closest("img,a"))return;S.lb=null;render();return}
   if(d.view){S.view=d.view;S.edit=null;S.notifOpen=false;if(d.view==="users")S.users=null;if(d.view==="journal")S.journal=null;render();scrollTo(0,0);return}
-  if(d.act==="logout"){await api("POST","/api/logout").catch(()=>{});if(es)es.close();S.me=null;S.open.clear();S.loaded=false;S.lastPending=null;document.title="Дорожная карта КСО";render();return}
+  if(d.act==="logout"){await api("POST","/api/logout").catch(()=>{});clearTok();S.drafts={};if(es)es.close();S.me=null;setOffline(false);S.open.clear();S.loaded=false;S.lastPending=null;document.title="Дорожная карта КСО";render();return}
   if(d.act==="notif"){S.notifOpen=!S.notifOpen;render();return}
   if(d.toggle){if(e.target.closest("input"))return;const id=d.toggle;if(S.open.has(id)){S.open.delete(id);if(S.edit===id)S.edit=null}else S.open.add(id);render();return}
   if(d.act==="expand"){if(S.open.size){S.open.clear();S.edit=null}else sortedIds().forEach(id=>S.open.add(id));render();return}

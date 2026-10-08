@@ -88,7 +88,10 @@ function send(res,code,obj,headers){const b=Buffer.from(JSON.stringify(obj));res
 const err=(res,code,msg)=>send(res,code,{error:msg});
 function body(req,limit){return new Promise((ok,no)=>{let n=0;const ch=[];req.on("data",c=>{n+=c.length;if(n>limit){no(new Error("big"));req.destroy();return}ch.push(c)});req.on("end",()=>{try{ok(ch.length?JSON.parse(Buffer.concat(ch).toString("utf8")):{})}catch(e){no(e)}});req.on("error",no)})}
 function cookies(req){const o={};(req.headers.cookie||"").split(";").forEach(p=>{const i=p.indexOf("=");if(i>0)o[p.slice(0,i).trim()]=decodeURIComponent(p.slice(i+1).trim())});return o}
-function who(req){const t=cookies(req).sid;const s=t&&SESS[t];if(!s||s.exp<Date.now())return null;if(s.role!=="engineer"){const u=DB.users[(s.login||"").toLowerCase()];if(!u||!u.active)return null;s.name=u.name;s.role=u.role;s.tts=u.role==="lead"&&Array.isArray(u.tts)?u.tts:null}return s}
+/* Сессия передаётся токеном отдельно для каждого окна браузера (заголовок X-KSO-Token или ?s= для картинок, файлов и потока событий) */
+function tokOf(req){const h=req.headers["x-kso-token"];if(h)return String(h);const q=url.parse(req.url,true).query.s;return q?String(q):""}
+const CLEAR_COOKIE={"Set-Cookie":"sid=; Path=/; Max-Age=0"};
+function who(req){const t=tokOf(req);const s=t&&SESS[t];if(!s||s.exp<Date.now())return null;if(s.role!=="engineer"){const u=DB.users[(s.login||"").toLowerCase()];if(!u||!u.active)return null;s.name=u.name;s.role=u.role;s.tts=u.role==="lead"&&Array.isArray(u.tts)?u.tts:null}return s}
 const MIME={".html":"text/html; charset=utf-8",".js":"application/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json",".jpg":"image/jpeg",".png":"image/png",".svg":"image/svg+xml",".ico":"image/x-icon"};
 function serveFile(res,file,extra){fs.readFile(file,(e,b)=>{if(e)return err(res,404,"Не найдено");res.writeHead(200,{"Content-Type":MIME[path.extname(file)]||"application/octet-stream","Content-Length":b.length,...(extra||{})});res.end(b)})}
 
@@ -174,15 +177,15 @@ async function handle(req,res){
     delete loginFails[ip];
     const tok=crypto.randomBytes(24).toString("hex"),rem=!!b.remember,ttl=rem?72*3600e3:12*3600e3;
     SESS[tok]={role:usr.role,name:usr.name,login:usr.login,exp:Date.now()+ttl};saveSess();journal(req,SESS[tok],"Вход"+(rem?" (запомнить на 72 ч)":""));
-    return send(res,200,{ok:true},{"Set-Cookie":`sid=${tok}; Path=/; HttpOnly; SameSite=Lax`+(rem?`; Max-Age=${72*3600}`:"")});
+    return send(res,200,{ok:true,token:tok,exp:SESS[tok].exp},CLEAR_COOKIE);
   }
   if(M==="POST"&&p==="/api/login-engineer"){
     const b=await body(req,1e4);const v=K.checkFio(b.name);if(v.error)return err(res,400,v.error);const name=v.name;
     const tok=crypto.randomBytes(24).toString("hex");SESS[tok]={role:"engineer",name,exp:Date.now()+16*3600e3};saveSess();journal(req,SESS[tok],"Вход инженера");
-    return send(res,200,{ok:true},{"Set-Cookie":`sid=${tok}; Path=/; HttpOnly; SameSite=Lax`});
+    return send(res,200,{ok:true,token:tok,name},CLEAR_COOKIE);
   }
   const s=who(req);
-  if(M==="POST"&&p==="/api/logout"){const t=cookies(req).sid;if(s)journal(req,s,"Выход");if(t){delete SESS[t];saveSess()}return send(res,200,{ok:true},{"Set-Cookie":"sid=; Path=/; Max-Age=0"})}
+  if(M==="POST"&&p==="/api/logout"){const t=tokOf(req);if(s)journal(req,s,"Выход");if(t&&SESS[t]){delete SESS[t];saveSess()}return send(res,200,{ok:true},CLEAR_COOKIE)}
   if(M==="GET"&&p==="/api/me")return send(res,200,s?{role:s.role,name:s.name,login:s.login||""}:{role:null});
   if(!s)return err(res,401,"Войдите заново");
   const isA=s.role==="admin",isL=s.role==="lead",isE=s.role==="engineer";
@@ -334,7 +337,7 @@ async function handle(req,res){
     const b=await body(req,1e4);
     if(M==="POST"){const login=String(b.login||"").trim();if(!/^[\w.-]{3,32}$/.test(login))return err(res,400,"Логин: 3–32 латинских буквы или цифры");if(DB.users[login.toLowerCase()])return err(res,409,"Такой логин уже есть");
       if(String(b.password||"").length<4)return err(res,400,"Пароль не короче 4 символов");if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");
-      DB.users[login.toLowerCase()]={login,name:String(b.name||login).trim().slice(0,80),role:b.role,active:true,tts:b.role==="lead"?cleanTts(b.tts):null,...hashPass(b.password)};saveDB();journal(req,s,"Создан пользователь",{details:login+" · "+K.ROLE[b.role]+(b.role==="lead"&&Array.isArray(b.tts)?" · ТТ: "+cleanTts(b.tts).length:"")});return send(res,200,{ok:true})}
+      DB.users[login.toLowerCase()]={login,name:String(b.name||login).trim().slice(0,80),role:b.role,active:true,tts:b.role==="lead"?cleanTts(b.tts):null,...hashPass(b.password)};commit();journal(req,s,"Создан пользователь",{details:login+" · "+K.ROLE[b.role]+(b.role==="lead"&&Array.isArray(b.tts)?" · ТТ: "+cleanTts(b.tts).length:"")});return send(res,200,{ok:true})}
     if(M==="PATCH"&&(mm=p.match(/^\/api\/users\/([\w.-]+)$/))){const x=DB.users[mm[1].toLowerCase()];if(!x)return err(res,404,"Нет пользователя");
       const admins=Object.values(DB.users).filter(y=>y.role==="admin"&&y.active);const self=x.login===s.login;const ch=[];
       if(b.role&&b.role!==x.role){if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");if(x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя убрать последнего администратора");x.role=b.role;ch.push("роль: "+K.ROLE[b.role])}
@@ -342,8 +345,8 @@ async function handle(req,res){
         if(!b.active)Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login)delete SESS[k]})}
       if(typeof b.name==="string"&&b.name.trim()&&b.name.trim()!==x.name){x.name=b.name.trim().slice(0,80);ch.push("имя: "+x.name)}
       if(b.tts!==undefined){const nt=x.role==="lead"?cleanTts(b.tts):null;if(JSON.stringify(nt)!==JSON.stringify(x.tts||null)){x.tts=nt;ch.push(nt?"ТТ: "+nt.length:"ТТ: все")}}
-      if(b.password){if(String(b.password).length<4)return err(res,400,"Пароль не короче 4 символов");Object.assign(x,hashPass(b.password));ch.push("сменён пароль");Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login&&k!==cookies(req).sid)delete SESS[k]})}
-      saveDB();saveSess();journal(req,s,"Изменён пользователь",{details:x.login+": "+ch.join(", ")});return send(res,200,{ok:true})}
+      if(b.password){if(String(b.password).length<4)return err(res,400,"Пароль не короче 4 символов");Object.assign(x,hashPass(b.password));ch.push("сменён пароль");Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login&&k!==tokOf(req))delete SESS[k]})}
+      if(ch.length)commit();saveSess();journal(req,s,"Изменён пользователь",{details:x.login+": "+ch.join(", ")});return send(res,200,{ok:true})}
     return err(res,404,"Не найдено");
   }
   if(M==="GET"&&p==="/api/journal"){if(!isA)return err(res,403,"Нет прав");return send(res,200,{rows:readJournal(Math.min(2000,+u.query.limit||500),String(u.query.q||""))})}
