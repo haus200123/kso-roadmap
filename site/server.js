@@ -89,8 +89,10 @@ const err=(res,code,msg)=>send(res,code,{error:msg});
 function body(req,limit){return new Promise((ok,no)=>{let n=0;const ch=[];req.on("data",c=>{n+=c.length;if(n>limit){no(new Error("big"));req.destroy();return}ch.push(c)});req.on("end",()=>{try{ok(ch.length?JSON.parse(Buffer.concat(ch).toString("utf8")):{})}catch(e){no(e)}});req.on("error",no)})}
 function cookies(req){const o={};(req.headers.cookie||"").split(";").forEach(p=>{const i=p.indexOf("=");if(i>0)o[p.slice(0,i).trim()]=decodeURIComponent(p.slice(i+1).trim())});return o}
 /* Сессия передаётся токеном отдельно для каждого окна браузера (заголовок X-KSO-Token или ?s= для картинок, файлов и потока событий) */
-function tokOf(req){const h=req.headers["x-kso-token"];if(h)return String(h);const q=url.parse(req.url,true).query.s;return q?String(q):""}
-const CLEAR_COOKIE={"Set-Cookie":"sid=; Path=/; Max-Age=0"};
+/* Порядок: заголовок окна → параметр ?s= (если прокси вырезает заголовки) → cookie kso_sid (если браузеру запрещено хранилище сайта) */
+function tokOf(req){const h=req.headers["x-kso-token"];if(h)return String(h);const q=url.parse(req.url,true).query.s;if(q)return String(q);return cookies(req).kso_sid||""}
+const CLEAR_COOKIE={"Set-Cookie":["sid=; Path=/; Max-Age=0","kso_sid=; Path=/; Max-Age=0"]};
+const sessCookie=(tok,rem)=>({"Set-Cookie":["sid=; Path=/; Max-Age=0",`kso_sid=${tok}; Path=/; HttpOnly; SameSite=Lax`+(rem?`; Max-Age=${72*3600}`:"")]});
 function who(req){const t=tokOf(req);const s=t&&SESS[t];if(!s||s.exp<Date.now())return null;if(s.role!=="engineer"){const u=DB.users[(s.login||"").toLowerCase()];if(!u||!u.active)return null;s.name=u.name;s.role=u.role;s.tts=u.role==="lead"&&Array.isArray(u.tts)?u.tts:null}return s}
 const MIME={".html":"text/html; charset=utf-8",".js":"application/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json",".jpg":"image/jpeg",".png":"image/png",".svg":"image/svg+xml",".ico":"image/x-icon"};
 function serveFile(res,file,extra){fs.readFile(file,(e,b)=>{if(e)return err(res,404,"Не найдено");res.writeHead(200,{"Content-Type":MIME[path.extname(file)]||"application/octet-stream","Content-Length":b.length,...(extra||{})});res.end(b)})}
@@ -177,15 +179,15 @@ async function handle(req,res){
     delete loginFails[ip];
     const tok=crypto.randomBytes(24).toString("hex"),rem=!!b.remember,ttl=rem?72*3600e3:12*3600e3;
     SESS[tok]={role:usr.role,name:usr.name,login:usr.login,exp:Date.now()+ttl};saveSess();journal(req,SESS[tok],"Вход"+(rem?" (запомнить на 72 ч)":""));
-    return send(res,200,{ok:true,token:tok,exp:SESS[tok].exp},CLEAR_COOKIE);
+    return send(res,200,{ok:true,token:tok,ttl},sessCookie(tok,rem));
   }
   if(M==="POST"&&p==="/api/login-engineer"){
     const b=await body(req,1e4);const v=K.checkFio(b.name);if(v.error)return err(res,400,v.error);const name=v.name;
     const tok=crypto.randomBytes(24).toString("hex");SESS[tok]={role:"engineer",name,exp:Date.now()+16*3600e3};saveSess();journal(req,SESS[tok],"Вход инженера");
-    return send(res,200,{ok:true,token:tok,name},CLEAR_COOKIE);
+    return send(res,200,{ok:true,token:tok,name},sessCookie(tok,false));
   }
   const s=who(req);
-  if(M==="POST"&&p==="/api/logout"){const t=tokOf(req);if(s)journal(req,s,"Выход");if(t&&SESS[t]){delete SESS[t];saveSess()}return send(res,200,{ok:true},CLEAR_COOKIE)}
+  if(M==="POST"&&p==="/api/logout"){const t=tokOf(req);if(s)journal(req,s,"Выход");if(t&&SESS[t]){delete SESS[t];saveSess()}return send(res,200,{ok:true},cookies(req).kso_sid===t?CLEAR_COOKIE:{})}
   if(M==="GET"&&p==="/api/me")return send(res,200,s?{role:s.role,name:s.name,login:s.login||""}:{role:null});
   if(!s)return err(res,401,"Войдите заново");
   const isA=s.role==="admin",isL=s.role==="lead",isE=s.role==="engineer";
