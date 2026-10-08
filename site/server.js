@@ -215,10 +215,15 @@ async function handle(req,res){
     return send(res,200,{ok:true,v:DB.v});
   }
   if(M==="POST"&&p==="/api/tt"){
-    if(!isA)return err(res,403,"Нет прав");const b=await body(req,1e5);const name=String(b.name||"").trim();if(!name)return err(res,400,"Укажите адрес");
-    const n=v=>Math.max(0,Math.min(999,Math.round(+v||0)));const skit=n(b.skit),ncr=n(b.ncr),lin=n(b.lin),demCsik=n(b.demCsik),fmt=String(b.fmt||"Реми").trim();const dem=ncr+lin+demCsik,reuse=Math.min(dem,skit);
-    const t={name,city:String(b.city||"").trim(),fmt,ul:String(b.ul||"").trim(),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",skit,bag:(ncr>0||fmt==="Реми Сити")?2:1,csik:0,csikFrom:"",ncr,demCsik,lin,
-      rTerm:reuse,rKkt:reuse,rCol:0,oTerm:skit-reuse,oKkt:skit-reuse,oFn:skit-reuse,oCol:skit,oGaz:0,leg:false,note:"",
+    if(!isA)return err(res,403,"Нет прав");const b=await body(req,1e5);const name=String(b.name||"").trim().slice(0,200);if(!name)return err(res,400,"Укажите адрес ТТ");
+    const has=k=>b[k]!==undefined&&b[k]!==null&&String(b[k]).trim()!=="";
+    const n=(k,def)=>has(k)?Math.max(0,Math.min(999,Math.round(+b[k]||0))):def;
+    const fmt=String(b.fmt||"").trim().slice(0,60)||"Реми";
+    const skit=n("skit",0),csik=n("csik",0),ncr=n("ncr",0),lin=n("lin",0),demCsik=n("demCsik",0),kso=skit+csik,dem=ncr+lin+demCsik;
+    const rKkt=n("rKkt",Math.min(dem,kso)),rTerm=n("rTerm",Math.min(dem,kso)),rCol=n("rCol",0);
+    const t={name,city:String(b.city||"").trim().slice(0,100),fmt,ul:String(b.ul||"").trim().slice(0,100),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",
+      skit,bag:has("bag")?(+b.bag>=2?2:1):((ncr>0||fmt==="Реми Сити")?2:1),csik,csikFrom:String(b.csikFrom||"").trim().slice(0,200),ncr,demCsik,lin,
+      rTerm,rKkt,rCol,oTerm:n("oTerm",Math.max(0,kso-rTerm)),oKkt:n("oKkt",Math.max(0,kso-rKkt)),oFn:n("oFn",Math.max(0,kso-rKkt)),oCol:n("oCol",Math.max(0,skit-rCol)),oGaz:n("oGaz",0),leg:false,note:"",
       order:Math.max(0,...Object.values(DB.tt).map(x=>x.order||0))+1,owner:{prep:"",onsite:""},exec:{prep:"",onsite:""}};
     const id=newId("t");DB.tt[id]=t;DB.lists[id]=genLists(t);DB.checks[id]={prep:{},onsite:{}};commit();journal(req,s,"Создана ТТ",{tt:name});
     return send(res,200,{ok:true,id});
