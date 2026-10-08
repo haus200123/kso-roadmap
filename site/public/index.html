@@ -209,18 +209,22 @@ const S={me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",c
   lb:null,newTT:false,confirmDel:null,confirmReset:null,rejecting:null,paramsOpen:null,engTT:null,lastPending:null,offline:false,users:null,journal:null,jq:"",userEdit:null};
 try{S.engTT=sessionStorage.getItem("kso-eng-tt")}catch(e){}
 
-/* ---------- вход: отдельная сессия для каждого окна ---------- */
-const TK="kso-tok",RK="kso-remember";
-function getTok(){let t=null;try{t=sessionStorage.getItem(TK)}catch(_){}if(t)return t;
-  try{const r=JSON.parse(localStorage.getItem(RK)||"null");if(r&&r.exp>Date.now()&&r.tok){try{sessionStorage.setItem(TK,r.tok)}catch(_){}return r.tok}if(r)localStorage.removeItem(RK)}catch(_){}return null}
-function setTok(t,remExp){try{sessionStorage.setItem(TK,t)}catch(_){}if(remExp){try{localStorage.setItem(RK,JSON.stringify({tok:t,exp:remExp}))}catch(_){}}}
-function clearTok(){let t=null;try{t=sessionStorage.getItem(TK);sessionStorage.removeItem(TK)}catch(_){}
+/* ---------- вход: отдельная сессия для каждого окна ----------
+   Токен хранится в памяти окна и в sessionStorage. Если браузеру запрещено хранилище сайта,
+   работает cookie сервера. Если прокси вырезает заголовки — токен уходит ещё и параметром ?s=. */
+const TK="kso-tok",RK="kso-remember";let memTok=null;
+const STORE_OK=(()=>{try{sessionStorage.setItem("kso-t","1");const ok=sessionStorage.getItem("kso-t")==="1";sessionStorage.removeItem("kso-t");localStorage.getItem(RK);return ok}catch(_){return false}})();
+function getTok(){if(memTok)return memTok;if(!STORE_OK)return null;let t=null;try{t=sessionStorage.getItem(TK)}catch(_){}if(t)return memTok=t;
+  try{const r=JSON.parse(localStorage.getItem(RK)||"null");if(r&&r.exp>Date.now()&&r.tok){try{sessionStorage.setItem(TK,r.tok)}catch(_){}return memTok=r.tok}if(r)localStorage.removeItem(RK)}catch(_){}return null}
+function setTok(t,ttl){memTok=t;if(!STORE_OK)return;try{sessionStorage.setItem(TK,t)}catch(_){}if(ttl){try{localStorage.setItem(RK,JSON.stringify({tok:t,exp:Date.now()+ttl}))}catch(_){}}}
+function clearTok(){const t=memTok;memTok=null;if(!STORE_OK)return;try{sessionStorage.removeItem(TK)}catch(_){}
   try{const r=JSON.parse(localStorage.getItem(RK)||"null");if(r&&(!t||r.tok===t))localStorage.removeItem(RK)}catch(_){}}
 function au(path){const t=getTok();return t?path+(path.includes("?")?"&":"?")+"s="+encodeURIComponent(t):path}
 /* ---------- сервер ---------- */
 async function api(method,path,data){
   const h={};if(data)h["Content-Type"]="application/json";const tk=getTok();if(tk)h["X-KSO-Token"]=tk;
-  const r=await fetch(path,{method,headers:h,body:data?JSON.stringify(data):undefined,credentials:"omit",cache:"no-store"});
+  let u=path==="/api/login"||path==="/api/login-engineer"?path:au(path);if(method==="GET")u+=(u.includes("?")?"&":"?")+"_="+Date.now();
+  let r;try{r=await fetch(u,{method,headers:h,body:data?JSON.stringify(data):undefined,credentials:"same-origin",cache:"no-store"})}catch(e){throw new Error("Нет связи с сервером")}
   let j={};try{j=await r.json()}catch(e){}
   if(r.status===401&&path!=="/api/login"){clearTok();if(es)es.close();S.me=null;setOffline(false);S.loaded=false;render();throw new Error(j.error||"Войдите заново")}
   if(!r.ok)throw new Error(j.error||"Ошибка "+r.status);
@@ -556,18 +560,18 @@ async function shrink(file){
 }
 function setList(id,L){S.LISTS[id]={...(S.LISTS[id]||{}),[S.view]:L};render();return act("PUT",`/api/lists/${id}/${S.view}`,{items:L})}
 async function start(){
-  S.me=null;if(getTok()){try{const m=await api("GET","/api/me");S.me=m.role?m:null;if(!S.me)clearTok()}catch(e){S.me=null}}
+  S.me=null;if(getTok()||!STORE_OK){try{const m=await api("GET","/api/me");S.me=m.role?m:null;if(!S.me)clearTok()}catch(e){S.me=null}}
   if(S.me){S.view="onsite";render();await reload().catch(e=>toast(e.message));live()}else render();
 }
 document.addEventListener("submit",async e=>{
   if(e.target.id!=="login-form")return;e.preventDefault();
-  try{const rem=$("#lg-rem").checked;const j=await api("POST","/api/login",{login:$("#lg-login").value,password:$("#lg-pass").value,remember:rem});clearTok();setTok(j.token,rem?j.exp:null);S.drafts={};start()}
+  try{const rem=$("#lg-rem").checked;const j=await api("POST","/api/login",{login:$("#lg-login").value,password:$("#lg-pass").value,remember:rem});clearTok();setTok(j.token,rem?j.ttl:null);S.drafts={};await start();if(!S.me)$("#lg-err").textContent="Сервер принял пароль, но браузер не передаёт данные входа. Сообщите администратору: нужно разрешить сайт в прокси/политике браузера."}
   catch(err){$("#lg-err").textContent=err.message}
 });
 document.addEventListener("click",async e=>{
   const el=e.target.closest("button,[data-toggle],.lb");if(!el)return;const d=el.dataset;
   if(el.id==="lg-eng"){const v=KSO.checkFio($("#lg-fio").value);if(v.error){$("#lg-fio-err").textContent=v.error;$("#lg-fio").classList.add("bad");$("#lg-fio").focus();return}
-    try{const j=await api("POST","/api/login-engineer",{name:v.name});clearTok();setTok(j.token,null);S.drafts={};start()}catch(err){$("#lg-fio-err").textContent=err.message}return}
+    try{const j=await api("POST","/api/login-engineer",{name:v.name});clearTok();setTok(j.token,null);S.drafts={};await start();if(!S.me)$("#lg-fio-err").textContent="Браузер не передаёт данные входа. Сообщите администратору."}catch(err){$("#lg-fio-err").textContent=err.message}return}
   if(d.act==="lb-close"){if(e.target.closest("img,a"))return;S.lb=null;render();return}
   if(d.view){S.view=d.view;S.edit=null;S.notifOpen=false;if(d.view==="users")S.users=null;if(d.view==="journal")S.journal=null;render();scrollTo(0,0);return}
   if(d.act==="logout"){await api("POST","/api/logout").catch(()=>{});clearTok();S.drafts={};if(es)es.close();S.me=null;setOffline(false);S.open.clear();S.loaded=false;S.lastPending=null;document.title="Дорожная карта КСО";render();return}
