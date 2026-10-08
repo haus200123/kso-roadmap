@@ -220,7 +220,7 @@ async function act(method,path,data,okMsg){try{const j=await api(method,path,dat
 let reloading=null;
 async function reload(){
   if(reloading)return reloading;
-  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";S.loaded=true;S.offline=false;notifyPending();soft()}finally{reloading=null}})();
+  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";const changed=!S.loaded||S.offline||j.v!==S.v0;S.v0=j.v;S.loaded=true;S.offline=false;notifyPending();if(changed)soft()}finally{reloading=null}})();
   return reloading;
 }
 let es=null;
@@ -259,17 +259,38 @@ function sortedIds(){const q=S.q.trim().toLowerCase();
    .sort((a,b)=>{const A=S.TT[a],B=S.TT[b];if(A.date&&B.date&&A.date!==B.date)return A.date<B.date?-1:1;if(!!A.date!==!!B.date)return A.date?-1:1;return (A.order||0)-(B.order||0)})}
 
 /* ---------- отрисовка ---------- */
-function editing(){const a=document.activeElement;return a&&a.closest&&a.closest("#app")&&a.matches("input[type=text],input[type=number],input[type=password],textarea")}
+function editing(){const a=document.activeElement;return a&&a.closest&&a.closest("#app")&&a.matches("input[type=text],input[type=number],input[type=password],input[type=date],select,textarea")}
 let deferred=false;
 function soft(){if(editing())deferred=true;else render()}
 document.addEventListener("focusout",()=>setTimeout(()=>{if(deferred&&!editing()){deferred=false;render()}},0));
+/* ---------- черновики форм: введённое не теряется при обновлении страницы ---------- */
+const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
+S.drafts={};S.dropDrafts=[];
+function draftKey(el){const d=el.dataset;
+  if(d.tp)return "tp|"+d.tp+"|"+el.value;if(d.tpAll)return "tpall|"+d.tpAll;if(d.tpQ)return "tpq|"+d.tpQ;
+  if(d.cmtInput)return "cmt|"+d.cmtInput;if(d.subNew)return "subnew|"+d.subNew;if(d.subInput)return "subin|"+d.subInput;if(d.respInput)return "resp|"+d.respInput;
+  return el.id?"#"+el.id:null}
+function dropDrafts(...prefixes){S.dropDrafts.push(...prefixes);prefixes.forEach(p=>Object.keys(S.drafts).forEach(k=>{if(k.startsWith(p))delete S.drafts[k]}))}
+function snapDrafts(){document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app ")).forEach(el=>{if(el.type==="file")return;const k=draftKey(el);if(k)S.drafts[k]=el.type==="checkbox"?el.checked:el.value});
+  S.dropDrafts.forEach(p=>Object.keys(S.drafts).forEach(k=>{if(k.startsWith(p))delete S.drafts[k]}));S.dropDrafts=[]}
+function restoreDrafts(){
+  document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app ")).forEach(el=>{const k=draftKey(el);if(!k||!(k in S.drafts))return;if(el.type==="checkbox")el.checked=!!S.drafts[k];else el.value=S.drafts[k]});
+  document.querySelectorAll("[data-tp-all]").forEach(cb=>{const l=document.querySelector(`[data-tp-list="${cb.dataset.tpAll}"]`);if(l)l.hidden=cb.checked;tpSync(cb.dataset.tpAll)});
+  document.querySelectorAll("[data-tp-q]").forEach(q=>{if(q.value)tpFilter(q.dataset.tpQ,q.value)});
+  const nr=$("#nu-role"),nw=$("#nu-tpwrap");if(nr&&nw)nw.hidden=nr.value!=="lead";
+  const er=$("#ue-role"),ew=$("#ue-tpwrap");if(er&&ew)ew.hidden=er.value!=="lead";
+}
 function render(){
   const app=$("#app");
+  const ae=document.activeElement,fk=ae&&ae.matches&&ae.matches(DRAFT_SEL)?draftKey(ae):null;let sel=null;try{if(fk)sel=[ae.selectionStart,ae.selectionEnd]}catch(_){}
+  if(S.me)snapDrafts();
   if(!S.me){app.innerHTML=loginView();return}
   const y=window.scrollY;
   let body;
   if(S.view==="orders")body=ordersView();else if(S.view==="users")body=usersView();else if(S.view==="journal")body=journalView();else body=mainView();
   app.innerHTML=headerView()+`<main class="wrap">${body}</main>`+(S.lb?lbView():"");
+  restoreDrafts();
+  if(fk){const el=[...document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app "))].find(x=>draftKey(x)===fk);if(el){el.focus({preventScroll:true});try{if(sel&&sel[0]!=null)el.setSelectionRange(sel[0],sel[1])}catch(_){}}}
   window.scrollTo(0,y);
 }
 function loginView(){
@@ -435,13 +456,17 @@ function editList(id){
     <div class="ed2"><input type="text" value="${esc(i.link||"")}" data-ed="${id}|${k}|link" placeholder="Ссылка на инструкцию (https://…)" aria-label="Ссылка на инструкцию">${sec==="prep"?`<input type="text" value="${esc(i.who||"")}" data-ed="${id}|${k}|who" placeholder="У кого уточнять" aria-label="У кого уточнять">`:`<span class="sub" style="align-self:center">${(i.sub||[]).length?`подзадач: ${i.sub.length} (правятся в обычном режиме)`:""}</span>`}</div>`).join("")+
    `<div class="addrow"><input type="text" id="add-text" placeholder="Новый пункт"><input type="text" id="add-g" list="gnames" placeholder="Группа" value="${esc(gn[gn.length-1]||"")}" style="flex:0 1 180px">${sec==="prep"?`<input type="number" id="add-d" min="0" value="3" style="width:70px" aria-label="Д-">`:""}<button class="btn pri" data-add="${id}">Добавить пункт</button></div>`;
 }
+const NF=[["skit","Установка S.kit","2"],["bag","Пакетн. зона S.kit (1/2)","авто"],["csik","Перенос CSIK","0"],["csikFrom","CSIK снимаем с ТТ","","text"],
+ ["ncr","Демонтаж NCR","0"],["lin","Демонтаж линейных касс","0"],["demCsik","Демонтаж CSIK","0"],
+ ["rKkt","ККТ с демонтажа","авто"],["rTerm","Терминалы с демонтажа","авто"],["rCol","Колонки с NCR","0"],
+ ["oTerm","Заказ терминалов Сбер","авто"],["oKkt","Заказ ККТ","авто"],["oFn","Заказ ФН","авто"],["oCol","Заказ колонок","авто"],["oGaz","Заказ меток ДемоБанк","0"]];
 function newTTView(){
   return `<div class="pick"><b>Новая ТТ</b>
-    <div class="bar-row"><label>Адрес<input type="text" id="n-name" placeholder="Улица, дом"></label><label>Город<input type="text" id="n-city"></label><label>Формат<input type="text" id="n-fmt" list="fmts"></label><label>Юрлицо<input type="text" id="n-ul"></label></div>
-    <div class="bar-row"><label>Установка S.kit<input type="number" id="n-skit" min="0" value="2"></label><label>Демонтаж NCR<input type="number" id="n-ncr" min="0" value="0"></label><label>Демонтаж линейных касс<input type="number" id="n-lin" min="0" value="0"></label><label>Демонтаж CSIK<input type="number" id="n-dcsik" min="0" value="0"></label><label>Дата работ<input type="date" id="n-date"></label></div>
+    <div class="bar-row"><label><span>Адрес <span class="req">*</span></span><input type="text" id="n-name" placeholder="Улица, дом"></label><label>Город<input type="text" id="n-city"></label><label>Формат<input type="text" id="n-fmt" list="fmts" placeholder="Реми"></label><label>Юрлицо<input type="text" id="n-ul" placeholder="ООО «…»"></label><label>Дата работ<input type="date" id="n-date"></label></div>
+    <div class="pgrid" style="padding:0">${NF.map(([k,l,ph,ty])=>`<label>${l}<input type="${ty||"number"}" ${ty?"":'min="0"'} id="n-${k}" placeholder="${ph}" ${k==="skit"?'value="2"':""}></label>`).join("")}</div>
     <datalist id="fmts"><option value="Реми"><option value="Реми Сити"><option value="Реми Эконом"></datalist>
     <div style="display:flex;gap:8px"><button class="btn pri" data-act="create-tt">Создать</button><button class="btn" data-act="cancel-new">Отмена</button></div>
-    <div class="sub">Остальные количества можно поправить в карточке после создания. Чек-листы создадутся по шаблону.</div></div>`;
+    <div class="sub">Поля «авто» можно оставить пустыми: ККТ и терминалы с демонтажа и заказ посчитаются из количества касс. Чек-листы подготовки и отработки заполнятся по тому же шаблону, что у остальных ТТ, с вашими цифрами.</div></div>`;
 }
 function ordersView(){
   if(!S.loaded)return `<div class="empty">Загружаю…</div>`;
@@ -464,6 +489,8 @@ function ttPicker(scope,sel){
         <div class="tp-items">${L.map(([id,t])=>`<label data-tp-name="${esc((t.name+" "+t.city+" "+t.fmt+" "+t.ul).toLowerCase())}"><input type="checkbox" data-tp="${scope}" value="${id}" ${has(id)?"checked":""}> ${esc(t.name)} <span class="sub">${esc(t.fmt)}</span></label>`).join("")}</div></div>`}).join("")}
     </div></div>`;
 }
+function tpFilter(scope,qv){const q=String(qv||"").trim().toLowerCase();
+  document.querySelectorAll(`[data-tp-scope="${scope}"] .tp-city`).forEach(c=>{let any=false;c.querySelectorAll("[data-tp-name]").forEach(l=>{const ok=!q||l.dataset.tpName.includes(q)||c.dataset.tpCityblock.toLowerCase().includes(q);l.hidden=!ok;if(ok)any=true});c.hidden=!any})}
 function readTp(scope){const all=document.querySelector(`[data-tp-all="${scope}"]`);if(!all||all.checked)return null;return [...document.querySelectorAll(`[data-tp="${scope}"]:checked`)].map(x=>x.value)}
 function tpSync(scope){
   const n=document.querySelectorAll(`[data-tp="${scope}"]:checked`).length;const c=document.querySelector(`[data-tp-count="${scope}"]`);if(c)c.textContent="Выбрано: "+n;
@@ -570,15 +597,25 @@ document.addEventListener("click",async e=>{
   if(d.delOk){const id=d.delOk;S.confirmDel=null;S.open.delete(id);act("DELETE","/api/tt/"+id,null,"ТТ удалена");return}
   if(d.act==="cancel-confirm"){S.confirmDel=null;S.confirmReset=null;render();return}
   if(d.act==="new-tt"){S.newTT=true;render();setTimeout(()=>$("#n-name")?.focus(),20);return}
-  if(d.act==="cancel-new"){S.newTT=false;render();return}
-  if(d.act==="create-tt"){const b={name:$("#n-name").value,city:$("#n-city").value,fmt:$("#n-fmt").value,ul:$("#n-ul").value,skit:$("#n-skit").value,ncr:$("#n-ncr").value,lin:$("#n-lin").value,demCsik:$("#n-dcsik").value,date:$("#n-date").value};
-    if(!b.name.trim()){$("#n-name").focus();return}const r=await act("POST","/api/tt",b,"ТТ создана");if(r){S.newTT=false;S.open.add(r.id);render()}return}
+  if(d.act==="cancel-new"){S.newTT=false;dropDrafts("#n-");render();return}
+  if(d.act==="create-tt"){const b={name:$("#n-name").value.trim(),city:$("#n-city").value,fmt:$("#n-fmt").value,ul:$("#n-ul").value,date:$("#n-date").value};
+    NF.forEach(([k])=>{const v=$("#n-"+k).value.trim();if(v!=="")b[k]=v});
+    if(!b.name){toast("Укажите адрес ТТ");$("#n-name").focus();return}
+    el.disabled=true;const r=await act("POST","/api/tt",b,"ТТ создана, чек-листы заполнены по шаблону");el.disabled=false;
+    if(r){S.newTT=false;dropDrafts("#n-");S.open.add(r.id);render();setTimeout(()=>document.getElementById("tt-"+r.id)?.scrollIntoView({block:"start",behavior:"smooth"}),50)}return}
   if(d.act==="journal-reload"){S.journal=null;render();return}
-  if(d.userEdit){S.userEdit=d.userEdit;render();return}
-  if(d.act==="user-cancel"){S.userEdit=null;render();return}
-  if(d.userSave){const b={name:$("#ue-name").value,role:$("#ue-role").value};if(b.role==="lead")b.tts=readTp("ue")??"all";const pw=$("#ue-pass").value;if(pw)b.password=pw;try{await api("PATCH","/api/users/"+encodeURIComponent(d.userSave),b);toast("Сохранено");S.userEdit=null;S.users=null;if(d.userSave===S.me.login){S.me=await api("GET","/api/me")}render()}catch(err){toast(err.message,5000)}return}
+  if(d.userEdit){dropDrafts("#ue-","tp|ue","tpall|ue","tpq|ue");S.userEdit=d.userEdit;render();return}
+  if(d.act==="user-cancel"){dropDrafts("#ue-","tp|ue","tpall|ue","tpq|ue");S.userEdit=null;render();return}
+  if(d.userSave){const b={name:$("#ue-name").value,role:$("#ue-role").value};if(b.role==="lead")b.tts=readTp("ue")??"all";const pw=$("#ue-pass").value;if(pw)b.password=pw;try{await api("PATCH","/api/users/"+encodeURIComponent(d.userSave),b);toast("Сохранено");dropDrafts("#ue-","tp|ue","tpall|ue","tpq|ue");S.userEdit=null;S.users=null;if(d.userSave===S.me.login){S.me=await api("GET","/api/me")}render()}catch(err){toast(err.message,5000)}return}
   if(d.userActive){const [l,a]=d.userActive.split("|");try{await api("PATCH","/api/users/"+encodeURIComponent(l),{active:a==="1"});S.users=null;render()}catch(err){toast(err.message,5000)}return}
-  if(d.act==="user-add"){try{await api("POST","/api/users",{login:$("#nu-login").value.trim(),name:$("#nu-name").value.trim(),password:$("#nu-pass").value,role:$("#nu-role").value,tts:$("#nu-role").value==="lead"?(readTp("nu")??"all"):"all"});toast("Пользователь добавлен");S.users=null;render()}catch(err){toast(err.message,5000)}return}
+  if(d.act==="user-add"){const login=$("#nu-login").value.trim(),name=$("#nu-name").value.trim(),pw=$("#nu-pass").value,role=$("#nu-role").value;
+    const bad=(m,f)=>{toast(m,5000);$(f)?.focus()};
+    if(!/^[A-Za-z0-9_.-]{3,32}$/.test(login))return bad("Логин: от 3 до 32 латинских букв или цифр, без пробелов","#nu-login");
+    if(!name)return bad("Впишите имя пользователя","#nu-name");
+    if(pw.length<4)return bad("Пароль — не короче 4 символов","#nu-pass");
+    const tts=role==="lead"?(readTp("nu")??"all"):"all";
+    if(Array.isArray(tts)&&!tts.length)return bad("Отметьте хотя бы одну ТТ или включите «Все ТТ»");
+    el.disabled=true;try{await api("POST","/api/users",{login,name,password:pw,role,tts});toast("Пользователь "+login+" добавлен");dropDrafts("#nu-","tp|nu","tpall|nu","tpq|nu");S.users=null;render()}catch(err){toast(err.message,5000)}finally{el.disabled=false}return}
 });
 document.addEventListener("keydown",e=>{
   if((e.key==="Enter"||e.key===" ")&&e.target.dataset&&e.target.dataset.toggle){e.preventDefault();e.target.click()}
@@ -594,8 +631,7 @@ document.addEventListener("input",e=>{
   if(e.target.id==="lg-fio"){const f=e.target,v=f.value,clean=v.replace(/[^A-Za-zА-Яа-яЁё\s'\-]/g,"");const msg=$("#lg-fio-err");
     if(clean!==v){const p=f.selectionStart-(v.length-clean.length);f.value=clean;f.setSelectionRange(Math.max(0,p),Math.max(0,p));msg.textContent=/\d/.test(v)?"Цифры в ФИО вводить нельзя":"В ФИО допустимы только буквы, пробел и дефис";f.classList.add("bad")}
     else{msg.textContent="";f.classList.remove("bad")}return}
-  if(e.target.dataset&&e.target.dataset.tpQ){const scope=e.target.dataset.tpQ,q=e.target.value.trim().toLowerCase();
-    document.querySelectorAll(`[data-tp-scope="${scope}"] .tp-city`).forEach(c=>{let any=false;c.querySelectorAll("[data-tp-name]").forEach(l=>{const ok=!q||l.dataset.tpName.includes(q)||c.dataset.tpCityblock.toLowerCase().includes(q);l.hidden=!ok;if(ok)any=true});c.hidden=!any});return}if(e.target.id==="q"){S.q=e.target.value;const p=e.target.selectionStart;render();const f=$("#q");if(f){f.focus();f.setSelectionRange(p,p)}}});
+  if(e.target.dataset&&e.target.dataset.tpQ){tpFilter(e.target.dataset.tpQ,e.target.value);return}if(e.target.id==="q"){S.q=e.target.value;const p=e.target.selectionStart;render();const f=$("#q");if(f){f.focus();f.setSelectionRange(p,p)}}});
 document.addEventListener("change",async e=>{
   const el=e.target,d=el.dataset;
   if(d.tpAll){const l=document.querySelector(`[data-tp-list="${d.tpAll}"]`);if(l)l.hidden=el.checked;return}
