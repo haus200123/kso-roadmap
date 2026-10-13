@@ -2,6 +2,7 @@
 /* Дорожная карта КСО — локальный сервер. Без внешних зависимостей: только Node.js 18+. */
 const http=require("http"),fs=require("fs"),path=require("path"),crypto=require("crypto"),os=require("os"),url=require("url");
 const {genLists,WIKI_ROOT,TEMPLATE_VERSION}=require("./lib/template.js");
+const MIG=require("./lib/migrate.js");
 const {buildXlsx}=require("./lib/xlsx.js");
 const K=require("./lib/common.js");
 
@@ -35,12 +36,13 @@ function loadDB(){
     mk("Admin","Администратор","admin","admin");mk("ITlead","Старший сотрудник","lead","lead");
     saveDB();console.log("Создана новая база данных: data\\db.json");
   }
-  DB.photos=DB.photos||{};DB.users=DB.users||{};DB.comments=DB.comments||{};
-  if(DB.tplVersion!==TEMPLATE_VERSION){
-    Object.keys(DB.tt).forEach(id=>{DB.lists[id]=genLists(DB.tt[id]);DB.checks[id]={prep:{},onsite:{}};});
-    DB.photos={};DB.comments={};DB.tplVersion=TEMPLATE_VERSION;saveDB();
-    console.log("Чек-листы всех ТТ пересозданы по новому шаблону (версия "+TEMPLATE_VERSION+")");
+  DB.photos=DB.photos||{};DB.users=DB.users||{};DB.comments=DB.comments||{};DB.checks=DB.checks||{};DB.lists=DB.lists||{};DB.removed=DB.removed||{};DB.waves=DB.waves||[];
+  if(DB.tplVersion!==TEMPLATE_VERSION||!DB.planImport){
+    /* перед переносом базы на новую версию — копия как есть */
+    if(fs.existsSync(F.db)){const d=path.join(BACKUPS,"before-v4-"+K.isoD(new Date())+"-"+Date.now().toString(36));fs.mkdirSync(d,{recursive:true});fs.copyFileSync(F.db,path.join(d,"db.json"));console.log("Копия базы перед обновлением: "+d)}
   }
+  const msgs=[];
+  if(MIG.migrate(DB,{site:SITE,newId,log:m=>{msgs.push(m);console.log("  "+m)}})){saveDB();if(msgs.length)journal(null,{name:"Сайт"},"Обновление сайта",{details:msgs.join("; ")})}
 }
 let saveTimer=null;
 function saveDB(){atomicWrite(F.db,JSON.stringify(DB))}
@@ -103,8 +105,15 @@ function broadcast(){const m=`data: {"v":${DB.v}}\n\n`;clients.forEach(c=>{try{c
 setInterval(()=>clients.forEach(c=>{try{c.write(": ping\n\n")}catch(e){}}),25000);
 
 /* ---------- правила ---------- */
-const NUMF=["skit","bag","csik","ncr","demCsik","lin","rKkt","rTerm","rCol","oTerm","oKkt","oFn","oCol","oGaz"];
-const TXTF=["name","city","fmt","ul","csikFrom","note","date"];
+const NUMF=["skit","bag","csik","ncr","demCsik","lin","rKkt","rTerm","rCol","oTerm","oKkt","oFn","oCol","oGaz","outSkit","buyTables","buyKvp"];
+const BASEF=["skit","csik","ncr","demCsik","lin"];
+const TXTF=["name","city","fmt","ul","csikFrom","note","date","skitFrom","outSkitTo","demCsikTo","code","region"];
+const NUM_LABEL={skit:"S.kit",bag:"пакетн. зона",csik:"перенос CSIK",ncr:"демонтаж NCR",demCsik:"демонтаж CSIK",lin:"демонтаж лин. касс",rKkt:"ККТ Кварц 2Ф с демонтажа",rTerm:"терминалы с демонтажа",rCol:"колонки с NCR",oTerm:"терминалы новые",oKkt:"ККТ Нова Принт новые",oFn:"ФН",oCol:"колонки новые",oGaz:"метки ДемоБанка",outSkit:"отправка S.kit",buyTables:"жел. столы",buyKvp:"КВП"};
+const waveOk=w=>w===""||(DB.waves||[]).some(x=>x.id===w);
+const waveName=w=>((DB.waves||[]).find(x=>x.id===w)||{name:"без волны"}).name;
+/* пересчёт чек-листов ТТ по новым количествам: отметки, комментарии, фото и свои пункты остаются */
+function resync(id){return MIG.syncTT(DB,id,newId)}
+function remember(id,sec,keys){DB.removed[id]=DB.removed[id]||{prep:[],onsite:[]};const R=DB.removed[id][sec]=DB.removed[id][sec]||[];keys.filter(Boolean).forEach(k=>{if(!R.includes(k))R.push(k)})}
 const SECS=["prep","onsite"];
 function chk(id,sec,iid){return ((DB.checks[id]||{})[sec]||{})[iid]||{st:"none"}}
 function setChk(id,sec,iid,o){DB.checks[id]=DB.checks[id]||{prep:{},onsite:{}};DB.checks[id][sec]=DB.checks[id][sec]||{};DB.checks[id][sec][iid]={st:"none",by:"",role:"",at:"",cby:"",cat:"",note:"",...o}}
@@ -120,7 +129,7 @@ function cleanupOrphans(id,sec){
   return n;
 }
 function isDone(id,sec,it){if(it.sub&&it.sub.length)return it.sub.every(x=>chk(id,sec,ckey(it.id,x.id)).st==="done");return chk(id,sec,it.id).st==="done"}
-function cleanSub(arr){return (Array.isArray(arr)?arr:[]).slice(0,60).map(x=>({id:String(x.id||newId("s")).slice(0,40),text:String(x.text||"").slice(0,500),link:safeLink(x.link)})).filter(x=>x.text)}
+function cleanSub(arr){return (Array.isArray(arr)?arr:[]).slice(0,60).map(x=>({id:String(x.id||newId("s")).slice(0,40),...(x.tk?{tk:String(x.tk).slice(0,500)}:{}),text:String(x.text||"").slice(0,500),link:safeLink(x.link)})).filter(x=>x.text)}
 function safeLink(u){u=String(u||"").trim().slice(0,600);return /^https?:\/\//i.test(u)?u:""}
 function newId(p){return p+Date.now().toString(36)+crypto.randomBytes(3).toString("hex")}
 const loginFails={};
@@ -137,7 +146,7 @@ function checklistXlsx(id,sec,s){
   const hl=(txt,st,h)=>{push(fill(txt,st),h);m("A",last)};
   const H=(text,w)=>Math.max(30,Math.ceil(text.length/w)*15+8);
   hl("Чек-лист: "+K.SECX[sec],1,26);
-  hl("ТТ: "+t.name+", "+t.city,2,20);
+  hl("ТТ: "+t.city+", "+t.name+(t.code?"  (№"+t.code+")":"")+(t.wave?"   ·   "+waveName(t.wave):""),2,20);
   hl("Формат: "+t.fmt+"   ·   Юрлицо: "+t.ul,9);
   hl("Дата работ: "+(t.date?K.fd(t.date):"не назначена"),9);
   hl("Ответственный: "+(owner||"—")+"   ·   Исполнитель: "+(ex||"—"),9);
@@ -160,15 +169,16 @@ function checklistXlsx(id,sec,s){
   hl("Выгружено "+K.stamp()+" · "+s.name,7);
   return Buffer.from(buildXlsx({name:K.SECX[sec],cols:P?[6,48,7,17,16,14]:[6,64,7,22],rows,merges}));
 }
-function ordersXlsx(only){
-  const src=only?Object.fromEntries(only.filter(id=>DB.tt[id]).map(id=>[id,DB.tt[id]])):DB.tt;
+function ordersXlsx(only,wave){
+  let src=only?Object.fromEntries(only.filter(id=>DB.tt[id]).map(id=>[id,DB.tt[id]])):DB.tt;
+  if(wave!==undefined&&wave!==null&&wave!=="all")src=Object.fromEntries(Object.entries(src).filter(([,t])=>(t.wave||"")===wave));
   const R=K.orderRows(src),C=K.ORDER_COLS;const rows=[],merges=["A1:"+String.fromCharCode(64+C.length)+"1"];
-  rows.push({h:26,cells:[{v:"Сводка заказа по юрлицам · "+K.stamp(),s:1}]});rows.push({cells:[]});
+  rows.push({h:26,cells:[{v:"Сводка заказа по юрлицам"+(wave&&wave!=="all"?" · "+waveName(wave):"")+" · "+K.stamp(),s:1}]});rows.push({cells:[]});
   rows.push({h:34,cells:C.map(c=>({v:c[1],s:8}))});
   R.forEach(r=>rows.push({h:20,cells:C.map(([k])=>({v:k==="ul"?r[k]:r[k],s:k==="ul"?3:6}))}));
   const tot={ul:"Итого"};C.slice(1).forEach(([k])=>tot[k]=R.reduce((a,x)=>a+x[k],0));
   rows.push({h:20,cells:C.map(([k])=>({v:tot[k],s:k==="ul"?4:8}))});
-  return Buffer.from(buildXlsx({name:"Заказ по ЮЛ",cols:[26,6,8,10,10,10,11,8,8,9,10,11,14],rows,merges}));
+  return Buffer.from(buildXlsx({name:"Заказ по ЮЛ",cols:[26,6,8,10,10,10,11,10,8,9,10,11,9,8,14],rows,merges}));
 }
 function xlsxHeaders(name,len){return {"Content-Type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","Content-Length":len,"Content-Disposition":`attachment; filename="checklist.xlsx"; filename*=UTF-8''${encodeURIComponent(name)}`}}
 
@@ -211,7 +221,7 @@ async function handle(req,res){
     const pick=o=>{if(!isL||!s.tts)return o;const r={};s.tts.forEach(id=>{if(o[id]!==undefined)r[id]=o[id]});return r};
     const photos={};Object.entries(DB.photos).forEach(([k,v])=>{if(canTT(v.tt))photos[k]={tt:v.tt,sec:v.sec,item:v.item,by:v.by,role:v.role,at:v.at}});
     const extra=isA?{people:[...new Set(Object.values(DB.users).filter(x=>x.active).map(x=>x.name))]}:{};
-    return send(res,200,{v:DB.v,tt:pick(DB.tt),lists:pick(DB.lists),checks:pick(DB.checks),photos,comments:pick(DB.comments),wikiRoot:WIKI_ROOT,today:K.isoD(new Date()),limited:!!(isL&&s.tts),...extra});
+    return send(res,200,{v:DB.v,waves:DB.waves,tt:pick(DB.tt),lists:pick(DB.lists),checks:pick(DB.checks),photos,comments:pick(DB.comments),wikiRoot:WIKI_ROOT,today:K.isoD(new Date()),limited:!!(isL&&s.tts),...extra});
   }
   // ТТ
   let mm;
@@ -221,44 +231,58 @@ async function handle(req,res){
     if(b.exec&&typeof b.exec==="object")SECS.forEach(sec=>{if(typeof b.exec[sec]==="string"){t.exec=t.exec||{};const v=b.exec[sec].trim().slice(0,80);if(t.exec[sec]!==v){ch.push(`исполнитель (${K.SECX[sec]}): ${v||"—"}`);t.exec[sec]=v}}});
     if(isA){
       if(b.owner&&typeof b.owner==="object")SECS.forEach(sec=>{if(typeof b.owner[sec]==="string"){t.owner=t.owner||{};const v=b.owner[sec].trim().slice(0,80);if(t.owner[sec]!==v){ch.push(`ответственный (${K.SECX[sec]}): ${v||"—"}`);t.owner[sec]=v}}});
-      NUMF.forEach(k=>{if(b[k]!==undefined){let v=Math.max(0,Math.min(999,Math.round(+b[k]||0)));if(k==="bag")v=v>=2?2:1;if(t[k]!==v){ch.push(`${k}: ${t[k]} → ${v}`);t[k]=v}}});
-      TXTF.forEach(k=>{if(typeof b[k]==="string"){let v=b[k].trim().slice(0,k==="note"?2000:200);if(k==="date"&&v&&!/^\d{4}-\d\d-\d\d$/.test(v))return;if(t[k]!==v){ch.push(k==="date"?`дата: ${K.fd(t[k])||"—"} → ${K.fd(v)||"—"}`:`${k}: ${v}`);t[k]=v}}});
-      if(typeof b.leg==="boolean")t.leg=b.leg;
+      let qty=false;
+      NUMF.forEach(k=>{if(b[k]!==undefined&&b[k]!==null&&b[k]!==""){let v=Math.max(0,Math.min(999,Math.round(+b[k]||0)));if(k==="bag")v=v>=2?2:1;if((+t[k]||0)!==v||t[k]===undefined){ch.push(`${NUM_LABEL[k]||k}: ${+t[k]||0} → ${v}`);t[k]=v;qty=true;if(K.DERIVED.includes(k)&&b.auto!==true)t.auto=false}}});
+      if(b.auto===true&&t.auto!==true){t.auto=true;ch.push("ККТ, терминалы, ФН и колонки — считаются автоматически")}
+      if(b.auto===false&&t.auto!==false){t.auto=false;ch.push("авто-расчёт ККТ выключен")}
+      if(t.auto!==false&&(qty||b.auto===true)){const a=K.autoCalc(t);K.DERIVED.forEach(k=>{if((+t[k]||0)!==a[k]){ch.push(`${NUM_LABEL[k]}: ${+t[k]||0} → ${a[k]} (авто)`);t[k]=a[k]}})}
+      TXTF.forEach(k=>{if(typeof b[k]==="string"){let v=b[k].trim().slice(0,k==="note"?2000:300);if(k==="date"&&v&&!/^\d{4}-\d\d-\d\d$/.test(v))return;if((t[k]||"")!==v){ch.push(k==="date"?`дата: ${K.fd(t[k])||"—"} → ${K.fd(v)||"—"}`:`${k}: ${v}`);if(["skitFrom","demCsikTo","outSkitTo"].includes(k))qty=true;t[k]=v}}});
+      if(typeof b.wave==="string"&&b.wave!==(t.wave||"")){if(!waveOk(b.wave))return err(res,400,"Нет такой волны");ch.push(`волна: ${waveName(t.wave||"")} → ${waveName(b.wave)}`);t.wave=b.wave}
+      if(typeof b.leg==="boolean"&&b.leg!==!!t.leg){t.leg=b.leg;qty=true;ch.push("нога столо-ящика: "+(b.leg?"да":"нет"))}
+      if(qty){const r=resync(id);if(r.added||r.dropped)ch.push(`чек-листы: +${r.added} / −${r.dropped} пунктов`)}
     }else if(Object.keys(b).some(k=>k!=="exec"))return err(res,403,"Менять эти поля может только администратор");
     if(ch.length){commit();journal(req,s,"Изменена ТТ",{tt:t.name,details:ch.join("; ")})}
-    return send(res,200,{ok:true,v:DB.v});
+    return send(res,200,{ok:true,v:DB.v,t});
   }
   if(M==="POST"&&p==="/api/tt"){
-    if(!isA)return err(res,403,"Нет прав");const b=await body(req,1e5);const name=String(b.name||"").trim().slice(0,200);if(!name)return err(res,400,"Укажите адрес ТТ");
+    if(!isA)return err(res,403,"Нет прав");const b=await body(req,1e5);let name=String(b.name||"").trim().slice(0,200),city=String(b.city||"").trim().slice(0,100);if(!name)return err(res,400,"Укажите адрес ТТ");
+    {const x={name,city};MIG.fixCityName(x);name=x.name;city=x.city}
     const has=k=>b[k]!==undefined&&b[k]!==null&&String(b[k]).trim()!=="";
     const n=(k,def)=>has(k)?Math.max(0,Math.min(999,Math.round(+b[k]||0))):def;
     const fmt=String(b.fmt||"").trim().slice(0,60)||"Реми";
     const skit=n("skit",0),csik=n("csik",0),ncr=n("ncr",0),lin=n("lin",0),demCsik=n("demCsik",0),kso=skit+csik,dem=ncr+lin+demCsik;
-    const rKkt=n("rKkt",Math.min(dem,kso)),rTerm=n("rTerm",Math.min(dem,kso)),rCol=n("rCol",0);
-    const t={name,city:String(b.city||"").trim().slice(0,100),fmt,ul:String(b.ul||"").trim().slice(0,100),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",
+    const A=K.autoCalc({skit,csik,ncr,lin,demCsik});
+    const rKkt=n("rKkt",A.rKkt),rTerm=n("rTerm",A.rTerm),rCol=n("rCol",A.rCol);
+    const wave=waveOk(String(b.wave||""))?String(b.wave||""):"";
+    const t={name,city,fmt,ul:String(b.ul||"").trim().slice(0,100),date:/^\d{4}-\d\d-\d\d$/.test(b.date||"")?b.date:"",
       skit,bag:has("bag")?(+b.bag>=2?2:1):((ncr>0||fmt==="Реми Сити")?2:1),csik,csikFrom:String(b.csikFrom||"").trim().slice(0,200),ncr,demCsik,lin,
       rTerm,rKkt,rCol,oTerm:n("oTerm",Math.max(0,kso-rTerm)),oKkt:n("oKkt",Math.max(0,kso-rKkt)),oFn:n("oFn",Math.max(0,kso-rKkt)),oCol:n("oCol",Math.max(0,skit-rCol)),oGaz:n("oGaz",0),leg:false,note:"",
+      wave,code:String(b.code||"").trim().slice(0,20),region:"",skitFrom:String(b.skitFrom||"").trim().slice(0,300),outSkit:n("outSkit",0),outSkitTo:String(b.outSkitTo||"").trim().slice(0,300),demCsikTo:String(b.demCsikTo||"").trim().slice(0,300),buyTables:n("buyTables",0),buyKvp:n("buyKvp",0),
+      auto:!K.DERIVED.some(k=>has(k)),
       order:Math.max(0,...Object.values(DB.tt).map(x=>x.order||0))+1,owner:{prep:"",onsite:""},exec:{prep:"",onsite:""}};
-    const id=newId("t");DB.tt[id]=t;DB.lists[id]=genLists(t);DB.checks[id]={prep:{},onsite:{}};commit();journal(req,s,"Создана ТТ",{tt:name});
+    const id=newId("t");DB.tt[id]=t;DB.lists[id]=genLists(t);DB.checks[id]={prep:{},onsite:{}};commit();journal(req,s,"Создана ТТ",{tt:city+", "+name,details:waveName(wave)});
     return send(res,200,{ok:true,id});
   }
   if(M==="DELETE"&&(mm=p.match(/^\/api\/tt\/([\w-]+)$/))){
     if(!isA)return err(res,403,"Нет прав");const id=mm[1],t=DB.tt[id];if(!t)return err(res,404,"ТТ не найдена");
     Object.entries(DB.photos).forEach(([k,v])=>{if(v.tt===id){try{fs.unlinkSync(path.join(PHOTOS,v.file))}catch(e){}delete DB.photos[k]}});
-    delete DB.tt[id];delete DB.lists[id];delete DB.checks[id];delete DB.comments[id];commit();journal(req,s,"Удалена ТТ",{tt:t.name});return send(res,200,{ok:true});
+    delete DB.tt[id];delete DB.lists[id];delete DB.checks[id];delete DB.comments[id];delete DB.removed[id];commit();journal(req,s,"Удалена ТТ",{tt:t.name});return send(res,200,{ok:true});
   }
   // чек-листы
   if(M==="PUT"&&(mm=p.match(/^\/api\/lists\/([\w-]+)\/(prep|onsite)$/))){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
     const b=await body(req,1e6);if(!Array.isArray(b.items))return err(res,400,"Нет пунктов");
     const before=(DB.lists[id]||{})[sec]||[];
-    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{}),resp:String(i.resp||"").slice(0,120)})).filter(i=>i.text);
+    const L=b.items.slice(0,300).map(i=>({id:String(i.id||newId(sec==="prep"?"p":"o")).slice(0,40),...(i.tk?{tk:String(i.tk).slice(0,500)}:{}),g:String(i.g||"Прочее").slice(0,80),text:String(i.text||"").slice(0,500),req:!!i.req,ph:!!i.ph,link:safeLink(i.link),sub:cleanSub(i.sub),...(sec==="prep"?{d:Math.max(0,Math.min(365,+i.d||0)),who:String(i.who||"").slice(0,120)}:{}),resp:String(i.resp||"").slice(0,120)})).filter(i=>i.text);
+    {const aIt=new Set(L.map(i=>i.tk).filter(Boolean)),aSub=new Set();L.forEach(i=>(i.sub||[]).forEach(x=>{if(i.tk&&x.tk)aSub.add(i.tk+" >> "+x.tk)}));
+     remember(id,sec,before.flatMap(i=>[i.tk&&!aIt.has(i.tk)?i.tk:null,...(i.tk&&aIt.has(i.tk)?(i.sub||[]).map(x=>x.tk&&!aSub.has(i.tk+" >> "+x.tk)?i.tk+" >> "+x.tk:null):[])]))}
     DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=L;const gone=cleanupOrphans(id,sec);commit();
     journal(req,s,"Изменён чек-лист",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`пунктов: ${before.length} → ${L.length}`+(gone?`; удалено отметок/комментариев/фото: ${gone}`:"")});return send(res,200,{ok:true});
   }
   if(M==="POST"&&(mm=p.match(/^\/api\/lists\/([\w-]+)\/(prep|onsite)\/reset$/))){
     if(!isA)return err(res,403,"Нет прав");const [,id,sec]=mm;if(!DB.tt[id])return err(res,404,"ТТ не найдена");
-    DB.lists[id]=DB.lists[id]||{};DB.lists[id][sec]=genLists(DB.tt[id])[sec];if(DB.checks[id])DB.checks[id][sec]={};cleanupOrphans(id,sec);commit();journal(req,s,"Чек-лист пересоздан из шаблона",{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true});
+    DB.removed[id]=DB.removed[id]||{prep:[],onsite:[]};const was=DB.removed[id][sec]||[];DB.removed[id][sec]=[];const r=resync(id);
+    commit();journal(req,s,"Чек-лист сверен с шаблоном",{tt:DB.tt[id].name,sec:K.SECX[sec],details:`возвращено пунктов: ${r.added}`+(was.length?` (ранее удалённых: ${was.length})`:"")});return send(res,200,{ok:true,added:r.added});
   }
   if(M==="POST"&&p==="/api/check"){
     const b=await body(req,1e4),{tt:id,sec,action}=b;
@@ -302,8 +326,44 @@ async function handle(req,res){
     if(M==="POST"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");it.sub.push({id:newId("s"),text,link:safeLink(b.link)});msg="Добавлена подзадача: "+text}
     else{const i=it.sub.findIndex(x=>x.id===b.sub);if(i<0)return err(res,404,"Подзадача не найдена");
       if(M==="PATCH"){const text=String(b.text||"").trim().slice(0,500);if(!text)return err(res,400,"Пустой текст");msg="Подзадача переименована: "+it.sub[i].text+" → "+text;it.sub[i].text=text;if(b.link!==undefined)it.sub[i].link=safeLink(b.link)}
-      else{msg="Удалена подзадача: "+it.sub[i].text;it.sub.splice(i,1);cleanupOrphans(id,sec)}}
+      else{msg="Удалена подзадача: "+it.sub[i].text;if(it.tk&&it.sub[i].tk)remember(id,sec,[it.tk+" >> "+it.sub[i].tk]);it.sub.splice(i,1);cleanupOrphans(id,sec)}}
     commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec],item:K.tok(it.text,DB.tt[id])});return send(res,200,{ok:true});
+  }
+  // пункты: быстрое добавление, правка и удаление (только админ)
+  if(p==="/api/item"&&["POST","PATCH","DELETE"].includes(M)){
+    if(!isA)return err(res,403,"Пункты меняет только администратор");
+    const b=await body(req,1e4),{tt:id,sec}=b;if(!DB.tt[id]||!SECS.includes(sec))return err(res,404,"Не найдено");
+    const L=(DB.lists[id]=DB.lists[id]||{prep:[],onsite:[]})[sec]=DB.lists[id][sec]||[];let msg="",it;
+    if(M==="POST"){
+      const text=String(b.text||"").replace(/\s+/g," ").trim().slice(0,500);if(!text)return err(res,400,"Впишите текст пункта");
+      const after=L.findIndex(x=>x.id===b.after);const g=String(b.g||(after>=0?L[after].g:"")||"Прочее").trim().slice(0,80);
+      let pos=after;if(pos<0)L.forEach((x,j)=>{if(x.g===g)pos=j});
+      const ref=pos>=0?L[pos]:null;
+      it={id:newId(sec==="prep"?"p":"o"),g,text,req:b.req!==false,ph:!!b.ph,link:"",sub:[],resp:"",...(sec==="prep"?{d:Math.max(0,Math.min(365,b.d!==undefined?+b.d||0:(ref?+ref.d||0:3))),who:""}:{})};
+      if(pos>=0)L.splice(pos+1,0,it);else L.push(it);msg="Добавлен пункт: "+text;
+    }else{
+      const i=L.findIndex(x=>x.id===b.item);if(i<0)return err(res,404,"Пункт не найден");it=L[i];
+      if(M==="PATCH"){const ch=[];
+        if(typeof b.text==="string"){const v=b.text.replace(/\s+/g," ").trim().slice(0,500);if(!v)return err(res,400,"Пустой текст");if(v!==it.text){ch.push("«"+it.text+"» → «"+v+"»");it.text=v}}
+        if(typeof b.g==="string"&&b.g.trim()&&b.g.trim()!==it.g){it.g=b.g.trim().slice(0,80);ch.push("группа: "+it.g)}
+        if(typeof b.req==="boolean"&&b.req!==!!it.req){it.req=b.req;ch.push(b.req?"обязательный":"необязательный")}
+        if(typeof b.ph==="boolean"&&b.ph!==!!it.ph){it.ph=b.ph;ch.push(b.ph?"нужно фото":"фото не обязательно")}
+        if(sec==="prep"&&b.d!==undefined){const v=Math.max(0,Math.min(365,+b.d||0));if(v!==+it.d){it.d=v;ch.push("за "+v+" дн.")}}
+        if(!ch.length)return send(res,200,{ok:true});msg="Изменён пункт: "+ch.join(", ");
+      }else{L.splice(i,1);if(it.tk)remember(id,sec,[it.tk]);const gone=cleanupOrphans(id,sec);msg="Удалён пункт: "+it.text+(gone?` (с отметками/комментариями/фото: ${gone})`:"")}
+    }
+    commit();journal(req,s,msg,{tt:DB.tt[id].name,sec:K.SECX[sec]});return send(res,200,{ok:true,id:it.id});
+  }
+  // волны (вкладки): создаёт, переименовывает и удаляет администратор
+  if(p.startsWith("/api/waves")){
+    if(!isA)return err(res,403,"Волны меняет только администратор");
+    const b=M==="DELETE"?{}:await body(req,1e4);const nm=String(b.name||"").replace(/\s+/g," ").trim().slice(0,40);
+    if(M==="POST"&&p==="/api/waves"){if(!nm)return err(res,400,"Впишите название волны");if(DB.waves.some(w=>w.name.toLowerCase()===nm.toLowerCase()))return err(res,409,"Такая волна уже есть");
+      const id="w"+Date.now().toString(36);DB.waves.push({id,name:nm});commit();journal(req,s,"Создана волна",{details:nm});return send(res,200,{ok:true,id})}
+    if((mm=p.match(/^\/api\/waves\/([\w-]+)$/))){const w=DB.waves.find(x=>x.id===mm[1]);if(!w)return err(res,404,"Нет такой волны");
+      if(M==="PATCH"){if(!nm)return err(res,400,"Впишите название волны");if(DB.waves.some(x=>x!==w&&x.name.toLowerCase()===nm.toLowerCase()))return err(res,409,"Такая волна уже есть");const old=w.name;w.name=nm;commit();journal(req,s,"Волна переименована",{details:old+" → "+nm});return send(res,200,{ok:true})}
+      if(M==="DELETE"){let n=0;Object.values(DB.tt).forEach(t=>{if(t.wave===w.id){t.wave="";n++}});DB.waves=DB.waves.filter(x=>x!==w);commit();journal(req,s,"Удалена волна",{details:w.name+(n?` · ТТ перенесены в «без волны»: ${n}`:"")});return send(res,200,{ok:true,moved:n})}}
+    return err(res,404,"Не найдено");
   }
   // комментарии (все)
   if(M==="POST"&&p==="/api/comments"){
@@ -338,7 +398,7 @@ async function handle(req,res){
     const buf=checklistXlsx(id,sec,s);const name=("Чек-лист "+(sec==="prep"?"подготовка":"отработка")+" - "+t.city+", "+t.name).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").slice(0,150)+".xlsx";
     journal(req,s,"Выгружен чек-лист в Excel",{tt:t.name,sec:K.SECX[sec]});res.writeHead(200,xlsxHeaders(name,buf.length));return res.end(buf);
   }
-  if(M==="GET"&&p==="/api/orders.xlsx"){if(isE)return err(res,403,"Нет прав");const buf=ordersXlsx(isL&&s.tts?s.tts:null);res.writeHead(200,xlsxHeaders("Сводка заказа по юрлицам "+K.isoD(new Date())+".xlsx",buf.length));return res.end(buf)}
+  if(M==="GET"&&p==="/api/orders.xlsx"){if(isE)return err(res,403,"Нет прав");const wq=u.query.wave===undefined?"all":String(u.query.wave);const buf=ordersXlsx(isL&&s.tts?s.tts:null,wq);res.writeHead(200,xlsxHeaders("Сводка заказа по юрлицам "+K.isoD(new Date())+".xlsx",buf.length));return res.end(buf)}
   // пользователи
   if(p.startsWith("/api/users")){
     if(!isA)return err(res,403,"Нет прав");

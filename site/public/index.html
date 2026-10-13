@@ -72,7 +72,7 @@ input[type=text],input[type=password],input[type=date],input[type=search],input[
 .ni{padding:10px 14px;border-bottom:1px solid var(--line-2);display:flex;flex-direction:column;gap:6px}
 .ni .acts{display:flex;gap:6px;flex-wrap:wrap}
 .offline{background:var(--bad);color:#fff;text-align:center;font-size:13.5px;font-weight:600;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
-@media (max-width:1250px){.tabs{order:3;flex:1 1 100%}.top .wrap{justify-content:space-between}}
+@media (max-width:1440px){.tabs{order:3;flex:1 1 100%}.top .wrap{justify-content:space-between}}
 
 main{padding-block:16px 60px}
 h1.pg{font-size:20px;margin:0 0 12px}
@@ -191,6 +191,62 @@ a.ico{text-decoration:none}
 .lb .cap{color:#fff;font-size:13px;text-align:center}
 .lb .acts{display:flex;gap:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:70;font-size:13.5px;max-width:calc(100% - 32px)}
+/* волны */
+.waves{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.wv{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-weight:600;font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.wv:hover{border-color:var(--accent);color:var(--accent)}
+.wv[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.wv .n{font-family:var(--f-num);font-weight:700;opacity:.8}
+.wv-act{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.wv-act input{width:170px}
+.wtag{font-size:11px;font-weight:700;padding:0 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.code{font-family:var(--f-num);font-size:11.5px;color:var(--muted)}
+/* быстрые количества */
+.qp{border:1px solid var(--line-2);border-radius:10px;background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.qp{padding:0;display:block}
+.qp summary{padding:9px 12px;cursor:pointer;font-weight:700;font-size:13px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center}
+.qp summary .sub{font-weight:400}
+.qp .qb{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.pick .bar-row select{font-size:inherit;padding:7px 10px}
+.qrow{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end}
+.qrow > b{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);width:100%;margin-bottom:-4px}
+.qf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.qf .st2{display:flex;align-items:center}
+.qf input[type=number]{width:58px;text-align:center;padding:5px 4px;border-radius:0;font-family:var(--f-num);font-weight:700}
+.qf select{padding:5px 6px}
+.qf .pm{width:28px;height:32px;border:1px solid var(--line);background:var(--surface);font-weight:700;padding:0;color:var(--fg)}
+.qf .pm:first-child{border-radius:8px 0 0 8px;border-right:0}.qf .pm:last-child{border-radius:0 8px 8px 0;border-left:0}
+.qf .pm:hover{color:var(--accent)}
+.qf.auto input[type=number]{background:var(--ok-soft)}
+.kkt-sum{font-size:12px}
+.kkt-sum.bad{color:var(--bad);font-weight:700}
+.note{white-space:pre-line}
+/* быстрые пункты */
+.grp .gadd{border:0;background:none;color:var(--accent);font-weight:700;font-size:12px;padding:0 4px;text-transform:none;letter-spacing:0}
+.iedit{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.iedit input[type=text]{flex:1 1 260px}
+.iedit label{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+.iadd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.iadd input[type=text]{flex:1 1 260px}
+/* календарь */
+.cal-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.cal-h h1{margin:0;font-size:20px;min-width:180px;text-align:center}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line)}
+.cal .wd{background:var(--surface-2);font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:6px 8px;text-align:center}
+.cal .dc{background:var(--surface);min-height:96px;padding:5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0;margin:0 1px 1px 0}
+.cal .dc.out{background:var(--surface-2)}
+.cal .dc.out .dn{opacity:.45}
+.cal .dc.today{box-shadow:inset 0 0 0 2px var(--accent)}
+.cal .dn{font-family:var(--f-num);font-size:12px;font-weight:700;color:var(--muted)}
+.cal .ev,.agenda .ev{border:0;text-align:left;font-size:12px;font-weight:600;padding:2px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ev.w-0{background:var(--surface-2);color:var(--fg)}
+.ev.w-1{background:#e3ebfc;color:#1d4fb8}.ev.w-2{background:#e1f3ea;color:#16704a}.ev.w-3{background:#fbf0dc;color:#8a560c}.ev.w-4{background:#f1e6fb;color:#6b3aa0}
+@media (prefers-color-scheme:dark){.ev.w-1{background:#1d2c4a;color:#9dbbff}.ev.w-2{background:#173327;color:#7fd8aa}.ev.w-3{background:#3a2c14;color:#f0c27a}.ev.w-4{background:#2f2140;color:#cfa8f5}}
+.ev:hover{filter:brightness(.95);text-decoration:underline}
+.agenda{display:none;flex-direction:column;gap:8px}
+.agenda .day{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.agenda .day b{font-family:var(--f-num)}
+@media (max-width:760px){.cal{display:none}.agenda{display:flex}}
 @media (max-width:640px){
   .tth{grid-template-columns:18px minmax(0,1fr);row-gap:8px}
   .ttr{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center}
@@ -211,9 +267,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(m,ms=3200){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",ms)}
 
-const S={itemDel:null,userDel:null,me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
+const S={qpOpen:new Set(),waves:[],wave:"all",waveNew:false,waveRen:false,waveDel:false,cal:null,itemEdit:null,itemAdd:null,itemDel:null,userDel:null,me:null,people:[],limited:false,respEdit:null,COMMENTS:{},wikiRoot:"",cmtOpen:new Set(),subAdd:null,subEdit:null,subDel:null,view:"onsite",q:"",open:new Set(),edit:null,notifOpen:false,TT:{},LISTS:{},CHECKS:{},PH:{},v:0,today:"",loaded:false,
   lb:null,newTT:false,confirmDel:null,confirmReset:null,rejecting:null,paramsOpen:null,engTT:null,lastPending:null,offline:false,users:null,journal:null,jq:"",userEdit:null};
-try{S.engTT=sessionStorage.getItem("kso-eng-tt")}catch(e){}
+try{S.engTT=sessionStorage.getItem("kso-eng-tt");const w=sessionStorage.getItem("kso-wave");if(w!==null)S.wave=w}catch(e){}
 
 /* ---------- вход: отдельная сессия для каждого окна ----------
    Токен хранится в памяти окна и в sessionStorage. Если браузеру запрещено хранилище сайта,
@@ -240,7 +296,7 @@ async function act(method,path,data,okMsg){try{const j=await api(method,path,dat
 let reloading=null;
 async function reload(){
   if(reloading)return reloading;
-  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";const changed=!S.loaded||j.v!==S.v0;S.v0=j.v;S.loaded=true;setOffline(false);notifyPending();if(changed){if(S.view==="users"&&S.users&&isAdmin())refreshUsers();soft()}}finally{reloading=null}})();
+  reloading=(async()=>{try{const j=await api("GET","/api/state");S.TT=j.tt;S.LISTS=j.lists;S.CHECKS=j.checks;S.PH={};Object.entries(j.photos).forEach(([id,p])=>{(S.PH[p.tt]=S.PH[p.tt]||[]).push({id,...p})});S.v=j.v;S.today=j.today;S.COMMENTS=j.comments||{};S.people=j.people||[];S.waves=j.waves||[];if(S.wave!=="all"&&S.wave!==""&&!S.waves.some(w=>w.id===S.wave))S.wave="all";S.limited=!!j.limited;S.wikiRoot=j.wikiRoot||"";const changed=!S.loaded||j.v!==S.v0;S.v0=j.v;S.loaded=true;setOffline(false);notifyPending();if(changed){if(S.view==="users"&&S.users&&isAdmin())refreshUsers();soft()}}finally{reloading=null}})();
   return reloading;
 }
 let es=null,esRetry=null;
@@ -276,8 +332,12 @@ function notifyPending(){
   if(isLead()&&S.lastPending!==null&&n>S.lastPending)toast(`Новая отметка инженера на проверку (всего ${n})`,5000);
   S.lastPending=n;
 }
+const waveName=w=>w?((S.waves.find(x=>x.id===w)||{}).name||"волна удалена"):"Без волны";
+const waveIdx=w=>{const i=S.waves.findIndex(x=>x.id===w);return i<0?0:(i%4)+1};
+const inWave=t=>isEng()||S.wave==="all"||(t.wave||"")===S.wave;
+function setWave(w){S.wave=w;S.waveNew=S.waveRen=S.waveDel=false;try{sessionStorage.setItem("kso-wave",w)}catch(_){}}
 function sortedIds(){const q=S.q.trim().toLowerCase();
-  return Object.keys(S.TT).filter(id=>{const t=S.TT[id];return !q||[t.name,t.city,t.ul,t.fmt,t.owner?.[S.view],t.exec?.[S.view]].join(" ").toLowerCase().includes(q)})
+  return Object.keys(S.TT).filter(id=>{const t=S.TT[id];return inWave(t)&&(!q||[t.name,t.city,t.ul,t.fmt,t.code,t.owner?.[S.view],t.exec?.[S.view]].join(" ").toLowerCase().includes(q))})
    .sort((a,b)=>{const A=S.TT[a],B=S.TT[b];if(A.date&&B.date&&A.date!==B.date)return A.date<B.date?-1:1;if(!!A.date!==!!B.date)return A.date?-1:1;return (A.order||0)-(B.order||0)})}
 
 /* ---------- отрисовка ---------- */
@@ -286,11 +346,11 @@ let deferred=false;
 function soft(){if(editing())deferred=true;else render()}
 document.addEventListener("focusout",()=>setTimeout(()=>{if(deferred&&!editing()){deferred=false;render()}},0));
 /* ---------- черновики форм: введённое не теряется при обновлении страницы ---------- */
-const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,#jq,[data-esnew],[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
+const DRAFT_SEL='[id^="n-"],[id^="nu-"],[id^="ue-"],[data-tp],[data-tp-all],[data-tp-q],#add-text,#add-g,#add-d,#rej-note,#jq,#wave-new,#wave-ren,[data-item-input],[data-item-new],[data-esnew],[data-cmt-input],[data-sub-new],[data-sub-input],[data-resp-input]';
 S.drafts={};S.dropDrafts=[];
 function draftKey(el){const d=el.dataset;
   if(d.tp)return "tp|"+d.tp+"|"+el.value;if(d.tpAll)return "tpall|"+d.tpAll;if(d.tpQ)return "tpq|"+d.tpQ;
-  if(d.cmtInput)return "cmt|"+d.cmtInput;if(d.subNew)return "subnew|"+d.subNew;if(d.subInput)return "subin|"+d.subInput;if(d.respInput)return "resp|"+d.respInput;if(d.esnew)return "esnew|"+d.esnew;
+  if(d.cmtInput)return "cmt|"+d.cmtInput;if(d.subNew)return "subnew|"+d.subNew;if(d.subInput)return "subin|"+d.subInput;if(d.respInput)return "resp|"+d.respInput;if(d.esnew)return "esnew|"+d.esnew;if(d.itemInput)return "iin|"+d.itemInput;if(d.itemNew)return "inew|"+d.itemNew;
   return el.id?"#"+el.id:null}
 function dropDrafts(...prefixes){S.dropDrafts.push(...prefixes);prefixes.forEach(p=>Object.keys(S.drafts).forEach(k=>{if(k.startsWith(p))delete S.drafts[k]}))}
 function snapDrafts(){document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app ")).forEach(el=>{if(el.type==="file")return;const k=draftKey(el);if(k)S.drafts[k]=el.type==="checkbox"?el.checked:el.value});
@@ -301,6 +361,7 @@ function restoreDrafts(){
   document.querySelectorAll("[data-tp-q]").forEach(q=>{if(q.value)tpFilter(q.dataset.tpQ,q.value)});
   const nr=$("#nu-role"),nw=$("#nu-tpwrap");if(nr&&nw)nw.hidden=nr.value!=="lead";
   const er=$("#ue-role"),ew=$("#ue-tpwrap");if(er&&ew)ew.hidden=er.value!=="lead";
+  if($("#n-preview"))newPreview();
 }
 function render(){
   const app=$("#app");
@@ -309,9 +370,10 @@ function render(){
   if(!S.me){app.innerHTML=loginView();return}
   const y=window.scrollY;
   let body;
-  if(S.view==="orders")body=ordersView();else if(S.view==="users")body=usersView();else if(S.view==="journal")body=journalView();else body=mainView();
+  if(S.view==="orders")body=ordersView();else if(S.view==="calendar")body=calendarView();else if(S.view==="users")body=usersView();else if(S.view==="journal")body=journalView();else body=mainView();
   app.innerHTML=headerView()+`<main class="wrap">${body}</main>`+(S.lb?lbView():"");
   restoreDrafts();
+  {const nav=document.querySelector(".tabs"),a=nav&&nav.querySelector('[aria-selected="true"]');if(a&&nav.scrollWidth>nav.clientWidth&&(a.offsetLeft<nav.scrollLeft||a.offsetLeft+a.offsetWidth>nav.scrollLeft+nav.clientWidth))nav.scrollLeft=a.offsetLeft-12}
   if(fk){const el=[...document.querySelectorAll("#app "+DRAFT_SEL.split(",").join(",#app "))].find(x=>draftKey(x)===fk);if(el){el.focus({preventScroll:true});try{if(sel&&sel[0]!=null)el.setSelectionRange(sel[0],sel[1])}catch(_){}}}
   window.scrollTo(0,y);
 }
@@ -330,7 +392,7 @@ function loginView(){
   </form></div>`;
 }
 const BELL=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
-function tabsFor(){const t=[["onsite",SEC.onsite]];if(!isEng())t.push(["prep",SEC.prep],["orders","Сводка заказа"]);if(isAdmin())t.push(["users","Пользователи"],["journal","Журнал"]);return t}
+function tabsFor(){const t=[["onsite",SEC.onsite]];if(!isEng())t.push(["prep",SEC.prep],["calendar","Календарь"],["orders","Сводка заказа"]);if(isAdmin())t.push(["users","Пользователи"],["journal","Журнал"]);return t}
 function headerView(){
   const pend=isLead()?allPending():[];
   return `<header class="top"><div class="wrap">
@@ -350,22 +412,39 @@ function notifView(pend){
      <div>${esc(tok(p.i.text,t))}${p.x?` → <b>${esc(tok(p.x.text,t))}</b>`:""}</div><div class="sub">Отметил ${esc(p.c.by)} · ${esc(p.c.at)}${ph?` · фото: ${ph}`:""}</div>
      <div class="acts"><button class="btn sm ok" data-confirm="${p.id}|${p.sec}|${p.i.id}|${p.x?p.x.id:""}">Подтвердить</button><button class="btn sm no" data-reject="${p.id}|${p.sec}|${p.i.id}|${p.x?p.x.id:""}">Отклонить</button></div></div>`}).join(""):`<div class="ni sub">Новых отметок нет.</div>`}</div>`;
 }
+function wavesBar(){
+  if(isEng())return "";
+  const all=Object.values(S.TT),cnt=w=>all.filter(t=>(t.wave||"")===w).length,none=cnt("");
+  const chip=(k,l,n)=>`<button class="wv" role="tab" data-wave="${esc(k)}" aria-selected="${S.wave===k}">${esc(l)} <span class="n">${n}</span></button>`;
+  let h=`<div class="waves" role="tablist" aria-label="Волны">`+chip("all","Все ТТ",all.length)+S.waves.map(w=>chip(w.id,w.name,cnt(w.id))).join("")+(none||S.wave===""?chip("","Без волны",none):"");
+  if(isAdmin()){
+    h+=S.waveNew?`<span class="wv-act"><input type="text" id="wave-new" placeholder="Например: 3 волна" maxlength="40" autocomplete="off"><button class="btn sm pri" data-act="wave-add">Создать вкладку</button><button class="btn sm" data-act="wave-cancel">Отмена</button></span>`
+      :`<button class="wv" data-act="wave-new" title="Новая вкладка-волна">＋ Волна</button>`;
+    const w=S.waves.find(x=>x.id===S.wave);
+    if(w&&!S.waveNew){
+      if(S.waveRen)h+=`<span class="wv-act"><input type="text" id="wave-ren" value="${esc(w.name)}" maxlength="40" autocomplete="off"><button class="btn sm pri" data-act="wave-ren-ok">Сохранить</button><button class="btn sm" data-act="wave-cancel">Отмена</button></span>`;
+      else if(S.waveDel)h+=`<span class="wv-act"><span class="sub">Удалить вкладку «${esc(w.name)}»? ${cnt(w.id)} ТТ перейдут в «Без волны» — отметки, фото и комментарии сохранятся.</span><button class="btn sm no" data-act="wave-del-ok">Удалить вкладку</button><button class="btn sm" data-act="wave-cancel">Отмена</button></span>`;
+      else h+=`<span class="wv-act"><button class="ico" data-act="wave-ren">✎ Переименовать</button><button class="ico danger" data-act="wave-del">🗑 Удалить вкладку</button></span>`;
+    }
+  }
+  return h+`</div>`;
+}
 function mainView(){
   if(!S.loaded)return `<div class="empty">Загружаю данные…</div>`;
   if(isEng())return engView();
   const list=sortedIds(),pend=allPending().length;
-  return `<div class="toolbar"><input type="search" id="q" placeholder="Поиск: адрес, город, юрлицо, ответственный" value="${esc(S.q)}" aria-label="Поиск">
+  return wavesBar()+`<div class="toolbar"><input type="search" id="q" placeholder="Поиск: адрес, город, №ТТ, юрлицо, ответственный" value="${esc(S.q)}" aria-label="Поиск">
     <button class="btn" data-act="expand">${S.open.size?"Свернуть все":"Развернуть все"}</button>
     ${isAdmin()?`<button class="btn pri" data-act="new-tt">Добавить ТТ</button>`:""}${S.view==="onsite"&&S.wikiRoot?`<a class="wiki" href="${esc(S.wikiRoot)}" target="_blank" rel="noopener">📘 Инструкции CSI-K V3</a>`:""}</div>
     ${S.newTT?newTTView():""}
     ${isAdmin()&&pend?`<div class="notice">На проверке у старшего: ${pend} ${plural(pend,"отметка","отметки","отметок")} инженеров.</div>`:""}
-    <div class="sub" style="margin-bottom:8px">${list.length} ТТ${S.limited?" · показаны только назначенные вам ТТ":""} · сортировка по дате работ</div>
+    <div class="sub" style="margin-bottom:8px">${list.length} ТТ · ${S.wave==="all"?"все волны":esc(waveName(S.wave))}${S.limited?" · показаны только назначенные вам ТТ":""} · сортировка по дате работ</div>
     <div class="tts">${list.map(id=>ttView(id)).join("")||`<div class="empty">Ничего не найдено.</div>`}</div>`;
 }
 function engView(){
   const ids=sortedIds(),cur=S.engTT&&S.TT[S.engTT]?S.engTT:"";
   return `<div class="pick"><label class="sub" for="eng-tt">ТТ, на которой я работаю</label>
-    <select id="eng-tt"><option value="">— выберите ТТ —</option>${ids.map(id=>{const t=S.TT[id];return `<option value="${id}" ${id===cur?"selected":""}>${t.date?fd(t.date)+" · ":""}${esc(t.city)}, ${esc(t.name)}</option>`}).join("")}</select>
+    <select id="eng-tt"><option value="">— выберите ТТ —</option>${[...S.waves.map(w=>w.id),""].map(w=>{const L=ids.filter(id=>(S.TT[id].wave||"")===w);if(!L.length)return "";return `<optgroup label="${esc(waveName(w))}">${L.map(id=>{const t=S.TT[id];return `<option value="${id}" ${id===cur?"selected":""}>${t.date?fd(t.date)+" · ":""}${esc(t.city)}, ${esc(t.name)}</option>`}).join("")}</optgroup>`}).join("")}</select>
     <div class="sub">Ваши отметки уходят старшему на проверку и засчитываются после подтверждения.</div>${S.wikiRoot?`<a class="wiki" href="${esc(S.wikiRoot)}" target="_blank" rel="noopener" style="align-self:flex-start">📘 Все инструкции по настройке CSI-K V3</a>`:""}</div>
     ${cur?`<div class="tts">${ttView(cur,true)}</div>`:`<div class="empty">Выберите ТТ, чтобы открыть чек-лист.</div>`}`;
 }
@@ -376,7 +455,7 @@ function ttView(id,force){
    <div class="tth" ${force?"":`data-toggle="${id}" role="button" tabindex="0" aria-expanded="${open}"`}>
     <span class="chev" aria-hidden="true">${force?"":"▶"}</span>
     <div class="ttn"><div class="nm">${esc(t.name)}</div>
-     <div class="mt"><span>${esc(t.city)} · ${esc(t.fmt)} · ${esc(t.ul)}</span><span>Ответственный: <b>${esc(owner||"не назначен")}</b></span>${ex?`<span>Исполнитель: <b>${esc(ex)}</b></span>`:""}</div></div>
+     <div class="mt">${S.wave==="all"&&t.wave?`<span class="wtag">${esc(waveName(t.wave))}</span>`:""}${t.code?`<span class="code">№${esc(t.code)}</span>`:""}<span>${esc(t.city)} · ${esc(t.fmt)}${t.ul?" · "+esc(t.ul):""}</span><span>Ответственный: <b>${esc(owner||"не назначен")}</b></span>${ex?`<span>Исполнитель: <b>${esc(ex)}</b></span>`:""}</div></div>
     <div class="ttr">
      ${isAdmin()?`<input type="date" value="${t.date||""}" data-date="${id}" aria-label="Дата работ на месте" title="Дата работ на месте">`:`<span class="date ${t.date?"":"none"}">${t.date?fd(t.date):"дата не назначена"}</span>`}
      <span class="prog"><span class="num">${s.done}/${s.total}</span><span class="bar"><i style="width:${pct}%"></i></span>${s.pend?`<span class="badge">${s.pend} на проверке</span>`:""}${s.over?`<span class="badge bad">просрочено ${s.over}</span>`:""}</span>
@@ -394,28 +473,44 @@ function ttBody(id){
      </div><datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`;
   if(isAdmin()&&S.view==="prep"){const ppl=[...new Set([...S.people,...Object.values(S.TT).flatMap(x=>[x.owner?.prep,x.owner?.onsite,x.exec?.prep,x.exec?.onsite]),...Object.values(S.LISTS).flatMap(l=>(l.prep||[]).map(i=>i.resp))].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
     h+=`<datalist id="people-list">${ppl.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
-  h+=paramsView(id);
+  h+=qtyPanel(id)+paramsView(id);
   if(t.note)h+=`<div class="note"><b>Примечание:</b> ${esc(t.note)}</div>`;
   if(isAdmin())h+=`<div class="adm-row">
      <button class="btn sm" data-edit="${id}">${S.edit===id?"✓ Готово":"✎ Редактировать пункты и подпункты"}</button>
-     ${S.confirmReset===id?`<span class="sub">Пункты раздела «${SEC[sec]}» будут пересозданы из шаблона, отметки сбросятся.</span><button class="btn sm no" data-reset-ok="${id}">Пересоздать</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm" data-reset="${id}">↺ Пересоздать из шаблона</button>`}
+     ${S.confirmReset===id?`<span class="sub">Вернуть в раздел «${SEC[sec]}» удалённые пункты шаблона? Отметки, комментарии, фото и ваши пункты сохранятся.</span><button class="btn sm pri" data-reset-ok="${id}">Вернуть</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm" data-reset="${id}">↺ Вернуть пункты шаблона</button>`}
      ${S.confirmDel===id?`<span class="sub">Удалить ТТ «${esc(t.name)}» целиком: оба чек-листа, отметки, комментарии и фото?</span><button class="btn sm no" data-del-ok="${id}">Да, удалить ТТ</button><button class="btn sm" data-act="cancel-confirm">Отмена</button>`:`<button class="btn sm no" data-del-tt="${id}">🗑 Удалить ТТ</button>`}
-    </div>${S.edit===id?`<div class="sub">Метки в тексте подставляются из количеств ТТ: {skit} {csik} {kso} {ncr} {demCsik} {lin} {dem} {rKkt} {rTerm} {rCol} {oTerm} {oKkt} {oFn} {oCol} {oGaz} {ul}. Изменения касаются только этой ТТ — шаблон для новых ТТ не меняется.</div>`:""}`;
+    </div>${S.edit===id?`<div class="sub">Метки в тексте подставляются из количеств ТТ: {skit} {csik} {kso} {ncr} {demCsik} {lin} {dem} {rKkt} {rTerm} {rCol} {oTerm} {oKkt} {oFn} {oCol} {oGaz} {outSkit} {buyTables} {buyKvp} {skitFrom} {csikFrom} {outSkitTo} {demCsikTo} {ul}. Изменения касаются только этой ТТ — шаблон для новых ТТ не меняется.</div>`:""}`;
   h+=S.edit===id&&isAdmin()?editList(id):checkList(id);
   return h+`</div>`;
 }
-const PF=[["name","Наименование / адрес","text"],["city","Город","text"],["fmt","Формат","text"],["ul","Юрлицо","text"],
- ["skit","Установка S.kit","n"],["bag","Пакетн. зона S.kit (1/2)","n"],["csik","Перенос CSIK","n"],["csikFrom","CSIK снимаем с ТТ","text"],
- ["ncr","Демонтаж NCR","n"],["demCsik","Демонтаж CSIK","n"],["lin","Демонтаж лин. касс","n"],
- ["rKkt","ККТ с демонтажа","n"],["rTerm","Терминалы с демонтажа","n"],["rCol","Колонки с NCR","n"],
- ["oTerm","Заказ терминалов Сбер","n"],["oKkt","Заказ ККТ","n"],["oFn","Заказ ФН","n"],["oCol","Заказ колонок","n"],["oGaz","Заказ меток ДемоБанк","n"],["note","Примечание","wide"]];
+const PF=[["city","Город","text"],["name","Улица и дом","text"],["fmt","Формат","text"],["ul","Юрлицо","text"],["code","№ ТТ","text"],["wave","Волна","wave"],
+ ["skitFrom","S.kit приходят с ТТ (если не от поставщика)","text"],["csikFrom","CSIK приходят с ТТ","text"],["outSkitTo","S.kit отправляем на ТТ","text"],["demCsikTo","Снятые CSIK отправляем на ТТ (пусто — на склад)","text"],["leg","Нога столо-ящика с РЦ","bool"],["note","Примечание","wide"]];
+const QF=[["Кассы",[["skit","S.kit ставим"],["bag","Пакетная зона","bag"],["csik","CSIK переносим сюда"],["outSkit","S.kit отправляем"]]],
+ ["Демонтаж",[["ncr","NCR"],["demCsik","CSIK"],["lin","Линейные кассы"]]],
+ ["ККТ",[["rKkt","Кварц 2Ф с демонтажа",1],["oKkt","Нова Принт новые",1]]],
+ ["Терминалы, ФН, колонки, заказ",[["rTerm","Терминалы с демонтажа",1],["oTerm","Терминалы новые",1],["oFn","ФН",1],["rCol","Колонки с NCR",1],["oCol","Колонки новые",1],["oGaz","Метки ДемоБанка"],["buyTables","Жел. столы"],["buyKvp","КВП"]]]];
+function qtyPanel(id){
+  if(!isAdmin())return "";
+  const t=S.TT[id],kso=(+t.skit||0)+(+t.csik||0),kk=(+t.rKkt||0)+(+t.oKkt||0),auto=t.auto!==false;
+  const f=([k,l,a])=>a==="bag"?`<label class="qf">${l}<select data-q="${id}|bag"><option value="1" ${+t.bag!==2?"selected":""}>1-пакетная</option><option value="2" ${+t.bag===2?"selected":""}>2-пакетная</option></select></label>`
+    :`<label class="qf ${a&&auto?"auto":""}">${l}<span class="st2"><button class="pm" type="button" data-qs="${id}|${k}|-1" aria-label="Меньше: ${l}">−</button><input type="number" min="0" max="999" value="${+t[k]||0}" data-q="${id}|${k}" aria-label="${l}"><button class="pm" type="button" data-qs="${id}|${k}|1" aria-label="Больше: ${l}">+</button></span></label>`;
+  const dem=(+t.ncr||0)+(+t.demCsik||0)+(+t.lin||0);
+  const sum=[`S.kit ${+t.skit||0}`,t.csik?`CSIK ${t.csik}`:"",`демонтаж ${dem}`,t.outSkit?`отправка ${t.outSkit}`:"",kso?`ККТ: Кварц ${+t.rKkt||0} + Нова ${+t.oKkt||0}`:""].filter(Boolean).join(" · ");
+  return `<details class="qp" data-qp="${id}" ${S.qpOpen.has(id)?"open":""}><summary>✎ Количество касс и ККТ <span class="sub">${esc(sum)}</span>${kk!==kso?`<span class="kkt-sum bad">ККТ не сходятся</span>`:""}</summary><div class="qb">
+    <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-qauto="${id}" ${auto?"checked":""}> Считать ККТ, терминалы, ФН и колонки автоматически</label>
+    ${QF.map(([g,fs])=>`<div class="qrow"><b>${g}</b>${fs.map(f).join("")}${g==="ККТ"?`<span class="kkt-sum ${kk!==kso?"bad":""}">нужно на ${kso} КСО: ${kso} · указано ${kk}${kk!==kso?" — не сходится":" ✓"}</span>`:""}</div>`).join("")}
+    <div class="sub">Кварц 2Ф снимаем с демонтируемых касс и ставим на новые, остальные ККТ — новые Нова Принт. Зелёные поля считаются сами; если поправить их вручную, авто-расчёт выключится. Чек-листы пересчитываются сразу: нужные пункты добавляются, отметки сохраняются.</div></div></details>`;
+}
 function paramsView(id){
   const t=S.TT[id],line=qtyLine(t).map(x=>`<span>${esc(x)}</span>`).join("");
   if(!isAdmin())return `<div class="qline">${line}</div>`;
-  return `<details class="params" ${S.paramsOpen===id?"open":""} data-params="${id}"><summary>Параметры ТТ и количество касс</summary>
+  const fld=([k,l,ty])=>ty==="wide"?`<label class="wide">${l}<textarea rows="3" data-f="${id}|${k}">${esc(t[k]||"")}</textarea></label>`
+    :ty==="wave"?`<label>${l}<select data-f="${id}|wave"><option value="">Без волны</option>${S.waves.map(w=>`<option value="${esc(w.id)}" ${t.wave===w.id?"selected":""}>${esc(w.name)}</option>`).join("")}</select></label>`
+    :ty==="bool"?`<label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" data-f="${id}|${k}" ${t[k]?"checked":""}>${l}</label>`
+    :`<label>${l}<input type="text" autocomplete="off" value="${esc(t[k]??"")}" data-f="${id}|${k}"></label>`;
+  return `<details class="params" ${S.paramsOpen===id?"open":""} data-params="${id}"><summary>Адрес, волна, откуда и куда едут кассы, примечание</summary>
    <div class="qline" style="padding:0 12px 10px">${line}</div>
-   <div class="sub" style="padding:0 12px 10px">Изменили количество касс (например, добавили демонтаж)? Нажмите внизу карточки «Пересоздать пункты из шаблона» — в чек-листах появятся нужные пункты.</div>
-   <div class="pgrid">${PF.map(([k,l,ty])=>ty==="wide"?`<label class="wide">${l}<textarea rows="2" data-f="${id}|${k}">${esc(t[k]||"")}</textarea></label>`:`<label>${l}<input type="${ty==="n"?"number":"text"}" ${ty==="n"?'min="0"':""} value="${esc(t[k]??"")}" data-f="${id}|${k}"></label>`).join("")}</div></details>`;
+   <div class="pgrid">${PF.map(fld).join("")}</div></details>`;
 }
 function stLine(id,sec,key,c){
   let st="";
@@ -436,10 +531,11 @@ function cmtBox(id,sec,ck,key){
 }
 const canSub=()=>isAdmin()||isLead();
 function checkList(id){
-  const t=S.TT[id],sec=S.view,L=items(id,sec);if(!L.length)return `<div class="sub">В этом разделе пунктов нет.</div>`;
+  const t=S.TT[id],sec=S.view,L=items(id,sec);if(!L.length)return `<div class="sub">В этом разделе пунктов нет.${isAdmin()?" Добавить пункт можно в режиме «Редактировать пункты».":""}</div>`;
   const ph=S.PH[id]||[];
-  return groups(L).map(g=>{const d=g.items.filter(i=>isDone(id,sec,i)).length;
-   return `<div><div class="grp"><span>${esc(g.name)}</span><span class="num">${d}/${g.items.length}</span></div>${g.items.map(i=>{
+  return groups(L).map((g,gi)=>{const d=g.items.filter(i=>isDone(id,sec,i)).length,ak=`${id}|${sec}|${gi}`;
+   const addRow=S.itemAdd===ak?`<div class="iadd"><input type="text" data-item-new="${ak}" placeholder="Новый пункт в группу «${esc(g.name)}»">${sec==="prep"?`<label class="sub" style="display:flex;gap:4px;align-items:center">за<input type="number" min="0" id="item-new-d" value="${+(g.items[g.items.length-1]||{}).d||3}" style="width:60px">дн.</label>`:""}<button class="btn sm pri" data-item-add-ok="${ak}">Добавить</button><button class="btn sm" data-act="item-cancel">Отмена</button></div>`:"";
+   return `<div><div class="grp"><span>${esc(g.name)}${isAdmin()&&S.itemAdd!==ak?` <button class="gadd" data-item-addg="${ak}" title="Добавить пункт в эту группу">＋ пункт</button>`:""}</span><span class="num">${d}/${g.items.length}</span></div>${g.items.map(i=>{
     const hasSub=i.sub&&i.sub.length,key=`${id}|${sec}|${i.id}|`,c=chk(id,sec,i.id);
     const on=isDone(id,sec,i),pe=!hasSub&&c.st==="pending";
     const subDone=hasSub?i.sub.filter(x=>chk(id,sec,ckey(i.id,x.id)).st==="done").length:0;
@@ -458,15 +554,16 @@ function checkList(id){
           ${cmtBox(id,sec,ckey(i.id,x.id),sk)}</div></div>`}).join("")}
        ${S.subAdd===key?`<div class="tools"><input type="text" data-sub-new="${key}" placeholder="Текст подзадачи" style="flex:1 1 240px"><button class="btn sm pri" data-sub-save="${key}">Добавить</button><button class="btn sm" data-act="sub-cancel">Отмена</button></div>`:""}</div>`:"";
     return `<div class="it ${on?"done":""}">${box}
-     <div><div class="tx">${i.req?'<span class="req" title="Обязательный пункт">*</span> ':''}${esc(tok(i.text,t))}</div>
+     <div>${S.itemEdit===key?`<div class="iedit"><input type="text" data-item-input="${key}" value="${esc(i.text)}" aria-label="Текст пункта">${sec==="prep"?`<label>за<input type="number" min="0" id="item-edit-d" value="${+i.d||0}" style="width:60px">дн.</label>`:""}<label><input type="checkbox" id="item-edit-req" ${i.req?"checked":""}>обяз.</label>${sec==="onsite"?`<label><input type="checkbox" id="item-edit-ph" ${i.ph?"checked":""}>фото</label>`:""}<button class="btn sm pri" data-item-save="${key}">Сохранить</button><button class="btn sm" data-act="item-cancel">Отмена</button></div><div class="sub">Метки вида {skit} подставляют количества ТТ. Меняется только эта ТТ.</div>`
+       :`<div class="tx">${i.req?'<span class="req" title="Обязательный пункт">*</span> ':''}${esc(tok(i.text,t))}</div>`}
       <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${sec==="prep"&&i.resp?`<span>Доп. ответственный: <b class="resp">${esc(i.resp)}</b></span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
       ${hasSub?"":rejectBox(key)}
       ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="${esc(au("/photos/"+p.id))}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
-      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()?(S.itemDel===key?`<button class="ico danger" data-item-del="${key}">Удалить пункт${hasSub?" с подпунктами":""}?</button>`:`<button class="ico" data-item-delask="${key}" aria-label="Удалить пункт">✕</button>`):""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
+      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&S.itemEdit!==key?`<button class="ico" data-item-edit="${key}" aria-label="Изменить пункт" title="Изменить пункт">✎</button>`:""}${isAdmin()?(S.itemDel===key?`<button class="ico danger" data-item-del="${key}">Удалить пункт${hasSub?" с подпунктами":""}?</button>`:`<button class="ico" data-item-delask="${key}" aria-label="Удалить пункт" title="Удалить пункт">✕</button>`):""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
       ${isAdmin()&&sec==="prep"&&S.respEdit===key?`<div class="tools"><input type="text" list="people-list" data-resp-input="${key}" value="${esc(i.resp||"")}" placeholder="ФИО: впишите или выберите из списка" style="flex:1 1 240px"><button class="btn sm pri" data-resp-save="${key}">Сохранить</button>${i.resp?`<button class="btn sm no" data-resp-clear="${key}">Убрать</button>`:""}<button class="btn sm" data-act="resp-cancel">Отмена</button></div>`:""}
       ${cmtBox(id,sec,i.id,key)}
       ${subsHtml}
-     </div></div>`}).join("")}</div>`}).join("");
+     </div></div>`}).join("")}${addRow}</div>`}).join("");
 }
 function editList(id){
   const sec=S.view,L=items(id,sec),gn=[...new Set(L.map(i=>i.g))];
@@ -482,26 +579,54 @@ function editList(id){
     <div class="eds-add"><input type="text" data-esnew="${id}|${k}" placeholder="＋ Новый подпункт к «${esc(i.text.slice(0,40))}${i.text.length>40?"…":""}»"><button class="btn sm" data-esadd="${id}|${k}">Добавить подпункт</button></div>`).join("")+
    `<div class="addrow"><input type="text" id="add-text" placeholder="Новый пункт"><input type="text" id="add-g" list="gnames" placeholder="Группа" value="${esc(gn[gn.length-1]||"")}" style="flex:0 1 180px">${sec==="prep"?`<input type="number" id="add-d" min="0" value="3" style="width:70px" aria-label="Д-">`:""}<button class="btn pri" data-add="${id}">Добавить пункт</button></div>`;
 }
-const NF=[["skit","Установка S.kit","2"],["bag","Пакетн. зона S.kit (1/2)","авто"],["csik","Перенос CSIK","0"],["csikFrom","CSIK снимаем с ТТ","","text"],
+const NF=[["skit","S.kit ставим","2"],["bag","Пакетн. зона S.kit (1/2)","авто"],["csik","CSIK переносим сюда","0"],["csikFrom","CSIK приходят с ТТ","","text"],["outSkit","S.kit отправляем","0"],
  ["ncr","Демонтаж NCR","0"],["lin","Демонтаж линейных касс","0"],["demCsik","Демонтаж CSIK","0"],
- ["rKkt","ККТ с демонтажа","авто"],["rTerm","Терминалы с демонтажа","авто"],["rCol","Колонки с NCR","0"],
- ["oTerm","Заказ терминалов Сбер","авто"],["oKkt","Заказ ККТ","авто"],["oFn","Заказ ФН","авто"],["oCol","Заказ колонок","авто"],["oGaz","Заказ меток ДемоБанк","0"]];
+ ["rKkt","ККТ Кварц 2Ф с демонтажа","авто"],["oKkt","ККТ Нова Принт новые","авто"],["rTerm","Терминалы с демонтажа","авто"],["oTerm","Терминалы новые","авто"],["oFn","ФН","авто"],["rCol","Колонки с NCR","авто"],["oCol","Колонки новые","авто"],["oGaz","Метки ДемоБанка","0"],["buyTables","Жел. столы","0"],["buyKvp","КВП","0"]];
 function newTTView(){
+  const wv=S.wave==="all"?"":S.wave;
   return `<div class="pick"><b>Новая ТТ</b>
-    <div class="bar-row"><label><span>Адрес <span class="req">*</span></span><input type="text" id="n-name" placeholder="Улица, дом"></label><label>Город<input type="text" id="n-city"></label><label>Формат<input type="text" id="n-fmt" list="fmts" placeholder="Реми"></label><label>Юрлицо<input type="text" id="n-ul" placeholder="ООО «…»"></label><label>Дата работ<input type="date" id="n-date"></label></div>
-    <div class="pgrid" style="padding:0">${NF.map(([k,l,ph,ty])=>`<label>${l}<input type="${ty||"number"}" ${ty?"":'min="0"'} id="n-${k}" placeholder="${ph}" ${k==="skit"?'value="2"':""}></label>`).join("")}</div>
+    <div class="bar-row"><label>Волна<select id="n-wave"><option value="">Без волны</option>${S.waves.map(w=>`<option value="${esc(w.id)}" ${w.id===wv?"selected":""}>${esc(w.name)}</option>`).join("")}</select></label>
+     <label>Город<input type="text" id="n-city" placeholder="Демоград" autocomplete="off"></label>
+     <label><span>Улица и дом <span class="req">*</span></span><input type="text" id="n-name" placeholder="Берёзовая, 117" autocomplete="off"></label>
+     <label>№ ТТ<input type="text" id="n-code" placeholder="1234" autocomplete="off" style="max-width:110px"></label></div>
+    <div class="bar-row"><label>Формат<input type="text" id="n-fmt" list="fmts" placeholder="Реми" autocomplete="off"></label><label>Юрлицо<input type="text" id="n-ul" placeholder="ООО «…»" autocomplete="off"></label><label>Дата работ<input type="date" id="n-date"></label></div>
+    <div class="sub" id="n-preview">Будет создана: —</div>
+    <div class="pgrid" style="padding:0">${NF.map(([k,l,ph,ty])=>`<label>${l}<input type="${ty||"number"}" ${ty?'autocomplete="off"':'min="0"'} id="n-${k}" placeholder="${ph}" ${k==="skit"?'value="2"':""}></label>`).join("")}</div>
     <datalist id="fmts"><option value="Реми"><option value="Реми Сити"><option value="Реми Эконом"></datalist>
     <div style="display:flex;gap:8px"><button class="btn pri" data-act="create-tt">Создать</button><button class="btn" data-act="cancel-new">Отмена</button></div>
-    <div class="sub">Поля «авто» можно оставить пустыми: ККТ и терминалы с демонтажа и заказ посчитаются из количества касс. Чек-листы подготовки и отработки заполнятся по тому же шаблону, что у остальных ТТ, с вашими цифрами.</div></div>`;
+    <div class="sub">Поля «авто» можно оставить пустыми: Кварц 2Ф = снимаемые кассы, остальные ККТ — Нова Принт; терминалы, ФН и колонки посчитаются из количества касс. Чек-листы заполнятся по тому же шаблону, что у остальных ТТ.</div></div>`;
 }
+function newPreview(){const c=($("#n-city")?.value||"").trim(),n=($("#n-name")?.value||"").trim(),el=$("#n-preview");if(!el)return;
+  const swap=n&&c&&!/\d/.test(n)&&/\d/.test(c);
+  el.innerHTML=swap?`<span style="color:var(--warn);font-weight:700">Похоже, город и адрес перепутаны: при создании поменяю местами → ${esc(n)}, ${esc(c)}</span>`:`Будет создана: <b>${esc(c||"город не указан")}, ${esc(n||"—")}</b>`}
 function ordersView(){
   if(!S.loaded)return `<div class="empty">Загружаю…</div>`;
-  const R=orderRows(S.TT),C=ORDER_COLS,tot={};C.slice(1).forEach(([k])=>tot[k]=R.reduce((a,x)=>a+x[k],0));
-  return `<div class="toolbar" style="justify-content:space-between"><h1 class="pg" style="margin:0">Сводка заказа по юрлицам</h1><a class="btn" href="${esc(au("/api/orders.xlsx"))}" download>Выгрузить в Excel</a></div>
+  const src=Object.fromEntries(Object.entries(S.TT).filter(([,t])=>inWave(t)));
+  const R=orderRows(src),C=ORDER_COLS,tot={};C.slice(1).forEach(([k])=>tot[k]=R.reduce((a,x)=>a+x[k],0));
+  return wavesBar()+`<div class="toolbar" style="justify-content:space-between"><h1 class="pg" style="margin:0">Сводка заказа по юрлицам · ${S.wave==="all"?"все волны":esc(waveName(S.wave))}</h1><a class="btn" href="${esc(au("/api/orders.xlsx?wave="+encodeURIComponent(S.wave)))}" download>Выгрузить в Excel</a></div>
    <div class="panel scroll"><table><thead><tr>${C.map(([k,l])=>`<th class="${k==="ul"?"":"r"}">${l}</th>`).join("")}</tr></thead><tbody>
    ${R.map(r=>`<tr>${C.map(([k])=>k==="ul"?`<td><b>${esc(r.ul)}</b></td>`:`<td class="r num">${r[k]||"—"}</td>`).join("")}</tr>`).join("")}
    <tr class="tot"><td>Итого</td>${C.slice(1).map(([k])=>`<td class="r num">${tot[k]}</td>`).join("")}</tr></tbody></table></div>
-   <p class="sub">Считается из количеств в карточках ТТ. Чтобы изменить, администратор правит «Параметры ТТ».</p>`;
+   <p class="sub">Считается из количеств в карточках ТТ выбранной волны («✎ Количество касс и ККТ»). S.kit — сколько ставим на ТТ: в 1 волне это перемещения и уже привезённые S.kit, закупка по Заказу 2 — во 2 волне.</p>`;
+}
+const MON=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+function calendarView(){
+  if(!S.loaded)return `<div class="empty">Загружаю…</div>`;
+  const ym=S.cal||(S.today||KSO.isoD(new Date())).slice(0,7),[y,m]=ym.split("-").map(Number);
+  const ids=Object.keys(S.TT).filter(id=>inWave(S.TT[id]));const byDay={};let nodate=0;
+  ids.forEach(id=>{const t=S.TT[id];if(!t.date){nodate++;return}(byDay[t.date]=byDay[t.date]||[]).push(id)});
+  Object.values(byDay).forEach(a=>a.sort((p,q)=>S.TT[p].name.localeCompare(S.TT[q].name,"ru")));
+  const first=new Date(y,m-1,1),start=new Date(y,m-1,1-((first.getDay()+6)%7));
+  const ev=id=>{const t=S.TT[id];return `<button class="ev w-${t.wave?waveIdx(t.wave):0}" data-goto="${id}" data-sec="onsite" title="${esc(t.city+", "+t.name+" · "+waveName(t.wave||""))}">${esc(t.name)}</button>`};
+  let cells="";
+  for(let k=0;k<42;k++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+k);if(k>=35&&d.getMonth()!==m-1)break;const iso=KSO.isoD(d);
+    cells+=`<div class="dc ${d.getMonth()!==m-1?"out":""} ${iso===S.today?"today":""}"><span class="dn">${d.getDate()}</span>${(byDay[iso]||[]).map(ev).join("")}</div>`}
+  const days=Object.keys(byDay).filter(d=>d.startsWith(ym)).sort(),n=days.reduce((a,d)=>a+byDay[d].length,0);
+  return wavesBar()+`<div class="cal-h"><button class="btn" data-cal="-1" aria-label="Предыдущий месяц">‹</button><h1>${MON[m-1]} ${y}</h1><button class="btn" data-cal="1" aria-label="Следующий месяц">›</button><button class="btn sm" data-cal="0">Сегодня</button>
+    <span class="sub">В этом месяце: ${n} ТТ · без даты: ${nodate} ТТ</span></div>
+   <div class="cal">${["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>`<div class="wd">${x}</div>`).join("")}${cells}</div>
+   <div class="agenda">${days.map(d=>`<div class="day"><b>${fd(d)}</b>${byDay[d].map(ev).join("")}</div>`).join("")||`<div class="empty">В этом месяце работ нет.</div>`}</div>
+   <p class="sub">Нажмите на ТТ, чтобы открыть её карточку. Дату работ ставит администратор в карточке ТТ (справа в заголовке).</p>`;
 }
 function ttPicker(scope,sel){
   const by={};Object.entries(S.TT).forEach(([id,t])=>{(by[t.city||"—"]=by[t.city||"—"]||[]).push([id,t])});
@@ -512,7 +637,7 @@ function ttPicker(scope,sel){
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input type="search" data-tp-q="${scope}" placeholder="Поиск ТТ" style="flex:1 1 200px"><span class="sub" data-tp-count="${scope}">Выбрано: ${sel?sel.length:0}</span></div>
       ${cities.map(c=>{const L=by[c].sort((a,b)=>a[1].name.localeCompare(b[1].name,"ru"));const all=L.every(([id])=>has(id));
         return `<div class="tp-city" data-tp-cityblock="${esc(c)}"><label><input type="checkbox" data-tp-city="${scope}|${esc(c)}" ${all?"checked":""}> <b>${esc(c)}</b> <span class="sub">· ${L.length}</span></label>
-        <div class="tp-items">${L.map(([id,t])=>`<label data-tp-name="${esc((t.name+" "+t.city+" "+t.fmt+" "+t.ul).toLowerCase())}"><input type="checkbox" data-tp="${scope}" value="${id}" ${has(id)?"checked":""}> ${esc(t.name)} <span class="sub">${esc(t.fmt)}</span></label>`).join("")}</div></div>`}).join("")}
+        <div class="tp-items">${L.map(([id,t])=>`<label data-tp-name="${esc((t.name+" "+t.city+" "+t.fmt+" "+t.ul).toLowerCase())}"><input type="checkbox" data-tp="${scope}" value="${id}" ${has(id)?"checked":""}> ${esc(t.name)} <span class="sub">${t.wave?esc(waveName(t.wave))+" · ":""}${esc(t.fmt)}</span></label>`).join("")}</div></div>`}).join("")}
     </div></div>`;
 }
 function tpFilter(scope,qv){const q=String(qv||"").trim().toLowerCase();
@@ -583,12 +708,33 @@ document.addEventListener("click",async e=>{
   if(el.id==="lg-eng"){const v=KSO.checkFio($("#lg-fio").value);if(v.error){$("#lg-fio-err").textContent=v.error;$("#lg-fio").classList.add("bad");$("#lg-fio").focus();return}
     try{const j=await api("POST","/api/login-engineer",{name:v.name});clearTok();setTok(j.token,null);S.drafts={};await start();if(!S.me)$("#lg-fio-err").textContent="Браузер не передаёт данные входа. Сообщите администратору."}catch(err){$("#lg-fio-err").textContent=err.message}return}
   if(d.act==="lb-close"){if(e.target.closest("img,a"))return;S.lb=null;render();return}
-  if(d.view){S.view=d.view;S.edit=null;S.notifOpen=false;if(d.view==="users")S.users=null;if(d.view==="journal")S.journal=null;render();scrollTo(0,0);return}
+  if(el.hasAttribute("data-wave")){setWave(d.wave);S.edit=null;render();return}
+  if(d.act==="wave-new"){S.waveNew=true;S.waveRen=S.waveDel=false;render();setTimeout(()=>$("#wave-new")?.focus(),20);return}
+  if(d.act==="wave-cancel"){S.waveNew=S.waveRen=S.waveDel=false;dropDrafts("#wave-");render();return}
+  if(d.act==="wave-add"){const nm=($("#wave-new")?.value||"").trim();if(!nm){$("#wave-new")?.focus();return}el.disabled=true;
+    try{const j=await api("POST","/api/waves",{name:nm});dropDrafts("#wave-");S.waveNew=false;setWave(j.id);await reload();render();toast("Вкладка «"+nm+"» создана")}catch(err){toast(err.message,5000);el.disabled=false}return}
+  if(d.act==="wave-ren"){S.waveRen=true;S.waveDel=false;render();setTimeout(()=>$("#wave-ren")?.select(),20);return}
+  if(d.act==="wave-ren-ok"){const nm=($("#wave-ren")?.value||"").trim();if(!nm){$("#wave-ren")?.focus();return}S.waveRen=false;dropDrafts("#wave-");document.activeElement?.blur();act("PATCH","/api/waves/"+encodeURIComponent(S.wave),{name:nm},"Волна переименована");return}
+  if(d.act==="wave-del"){S.waveDel=true;S.waveRen=false;render();return}
+  if(d.act==="wave-del-ok"){const w=S.wave;setWave("all");const r=await act("DELETE","/api/waves/"+encodeURIComponent(w),null);if(r)toast("Вкладка удалена"+(r.moved?` · ${r.moved} ТТ перенесены в «Без волны»`:""));return}
+  if(d.cal){if(d.cal==="0")S.cal=null;else{const ym=S.cal||(S.today||KSO.isoD(new Date())).slice(0,7);const [y,m]=ym.split("-").map(Number);const dt=new Date(y,m-1+ +d.cal,1);S.cal=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")}render();return}
+  if(d.qs){const [id,k,dl]=d.qs.split("|");const t=S.TT[id];if(!t)return;const v=Math.max(0,Math.min(999,(+t[k]||0)+ +dl));if(v===(+t[k]||0))return;t[k]=v;render();act("PATCH","/api/tt/"+id,{[k]:v});return}
+  if(d.itemAddg){S.itemAdd=d.itemAddg;S.itemEdit=null;render();setTimeout(()=>document.querySelector(`[data-item-new="${d.itemAddg}"]`)?.focus(),20);return}
+  if(d.act==="item-cancel"){if(S.itemAdd)dropDrafts("inew|"+S.itemAdd);if(S.itemEdit)dropDrafts("iin|"+S.itemEdit);S.itemAdd=null;S.itemEdit=null;render();return}
+  if(d.itemAddOk){const k=d.itemAddOk,inp=document.querySelector(`[data-item-new="${k}"]`);const text=(inp?.value||"").trim();if(!text){inp?.focus();return}
+    const [tt,sec,gi]=k.split("|");const g=groups(items(tt,sec))[+gi];if(!g)return;const after=g.items[g.items.length-1]?.id;const dd=$("#item-new-d");
+    inp.value="";inp.blur();dropDrafts("inew|"+k);const r=await act("POST","/api/item",{tt,sec,g:g.name,after,text,d:dd?+dd.value||0:undefined},"Пункт добавлен");
+    if(r)setTimeout(()=>document.querySelector(`[data-item-new="${k}"]`)?.focus(),30);return}
+  if(d.itemEdit){S.itemEdit=d.itemEdit;S.itemAdd=null;S.itemDel=null;render();setTimeout(()=>{const x=document.querySelector(`[data-item-input="${d.itemEdit}"]`);if(x){x.focus();x.setSelectionRange(x.value.length,x.value.length)}},20);return}
+  if(d.itemSave){const k=d.itemSave,inp=document.querySelector(`[data-item-input="${k}"]`);const text=(inp?.value||"").trim();if(!text){inp?.focus();return}
+    const [tt,sec,item]=k.split("|");const b={tt,sec,item,text,req:!!$("#item-edit-req")?.checked};if($("#item-edit-ph"))b.ph=$("#item-edit-ph").checked;if($("#item-edit-d"))b.d=+$("#item-edit-d").value||0;
+    dropDrafts("iin|"+k);S.itemEdit=null;inp.blur();act("PATCH","/api/item",b,"Пункт изменён");return}
+  if(d.view){S.view=d.view;S.edit=null;S.notifOpen=false;S.itemEdit=null;S.itemAdd=null;if(d.view==="users")S.users=null;if(d.view==="journal")S.journal=null;render();scrollTo(0,0);return}
   if(d.act==="logout"){await api("POST","/api/logout").catch(()=>{});clearTok();S.drafts={};if(es)es.close();S.me=null;setOffline(false);S.open.clear();S.loaded=false;S.lastPending=null;document.title="Дорожная карта КСО";render();return}
   if(d.act==="notif"){S.notifOpen=!S.notifOpen;render();return}
   if(d.toggle){if(e.target.closest("input"))return;const id=d.toggle;if(S.open.has(id)){S.open.delete(id);if(S.edit===id)S.edit=null}else S.open.add(id);render();return}
   if(d.act==="expand"){if(S.open.size){S.open.clear();S.edit=null}else sortedIds().forEach(id=>S.open.add(id));render();return}
-  if(d.goto){S.view=d.sec;S.notifOpen=false;S.open.add(d.goto);render();setTimeout(()=>document.getElementById("tt-"+d.goto)?.scrollIntoView({block:"start",behavior:"smooth"}),30);return}
+  if(d.goto){S.view=d.sec;S.notifOpen=false;S.q="";S.open.add(d.goto);render();setTimeout(()=>document.getElementById("tt-"+d.goto)?.scrollIntoView({block:"start",behavior:"smooth"}),30);return}
   if(d.tick){const [tt,sec,item,sub]=d.tick.split("|");el.disabled=true;const r=await act("POST","/api/check",{tt,sec,item,sub:sub||undefined,action:"tick"});if(r&&isEng())toast("Отметка отправлена старшему на проверку");return}
   if(d.confirm){const [tt,sec,item,sub]=d.confirm.split("|");act("POST","/api/check",{tt,sec,item,sub:sub||undefined,action:"confirm"},"Подтверждено");return}
   if(d.reject){S.rejecting=d.reject;S.notifOpen=false;const [id,sec]=d.reject.split("|");S.view=sec;S.open.add(id);render();setTimeout(()=>$("#rej-note")?.focus(),20);return}
@@ -619,7 +765,7 @@ document.addEventListener("click",async e=>{
   if(d.add){const id=d.add,text=$("#add-text").value.trim();if(!text){$("#add-text").focus();return}const L=items(id,S.view).slice();const it={id:"",g:$("#add-g").value.trim()||"Прочее",text,req:true,ph:false};if(S.view==="prep")it.d=Math.max(0,+$("#add-d").value||0);
     let pos=-1;L.forEach((x,j)=>{if(x.g===it.g)pos=j});if(pos>=0)L.splice(pos+1,0,it);else L.push(it);setList(id,L);return}
   if(d.itemDelask){S.itemDel=d.itemDelask;render();setTimeout(()=>{if(S.itemDel===d.itemDelask){S.itemDel=null;render()}},5000);return}
-  if(d.itemDel){const [id,sec,item]=d.itemDel.split("|");S.itemDel=null;S.view=sec;const L=items(id,sec).filter(x=>x.id!==item);setList(id,L).then(r=>{if(r)toast("Пункт удалён")});return}
+  if(d.itemDel){const [id,sec,item]=d.itemDel.split("|");S.itemDel=null;act("DELETE","/api/item",{tt:id,sec,item},"Пункт удалён");return}
   if(d.esmv){const [id,k,j,dir]=d.esmv.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).slice()}));const A=L[+k].sub,a=+j,b=a+ +dir;[A[a],A[b]]=[A[b],A[a]];setList(id,L);return}
   if(d.esrm){const [id,k,j]=d.esrm.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).slice()}));L[+k].sub.splice(+j,1);setList(id,L);return}
   if(d.esadd){const inp=document.querySelector(`[data-esnew="${d.esadd}"]`);const text=(inp?.value||"").trim();if(!text){inp?.focus();return}
@@ -628,15 +774,17 @@ document.addEventListener("click",async e=>{
   if(d.act==="user-del-cancel"){S.userDel=null;render();return}
   if(d.userDel){const l=d.userDel;S.userDel=null;try{await api("DELETE","/api/users/"+encodeURIComponent(l));toast("Пользователь "+l+" удалён");S.users=null;render()}catch(err){toast(err.message,5000);render()}return}
   if(d.reset){S.confirmReset=d.reset;S.confirmDel=null;render();return}
-  if(d.resetOk){const id=d.resetOk;S.confirmReset=null;act("POST",`/api/lists/${id}/${S.view}/reset`,{},"Пункты пересозданы из шаблона");return}
+  if(d.resetOk){const id=d.resetOk;S.confirmReset=null;act("POST",`/api/lists/${id}/${S.view}/reset`,{},"Пункты шаблона возвращены, отметки сохранены");return}
   if(d.delTt){S.confirmDel=d.delTt;S.confirmReset=null;render();return}
   if(d.delOk){const id=d.delOk;S.confirmDel=null;S.open.delete(id);act("DELETE","/api/tt/"+id,null,"ТТ удалена");return}
   if(d.act==="cancel-confirm"){S.confirmDel=null;S.confirmReset=null;render();return}
   if(d.act==="new-tt"){S.newTT=true;render();setTimeout(()=>$("#n-name")?.focus(),20);return}
   if(d.act==="cancel-new"){S.newTT=false;dropDrafts("#n-");render();return}
-  if(d.act==="create-tt"){const b={name:$("#n-name").value.trim(),city:$("#n-city").value,fmt:$("#n-fmt").value,ul:$("#n-ul").value,date:$("#n-date").value};
+  if(d.act==="create-tt"){let name=$("#n-name").value.trim(),city=$("#n-city").value.trim();
+    if(name&&city&&!/\d/.test(name)&&/\d/.test(city)){[name,city]=[city,name];toast("Город и адрес были перепутаны — поменял местами",5000)}
+    const b={name,city,fmt:$("#n-fmt").value,ul:$("#n-ul").value,date:$("#n-date").value,wave:$("#n-wave").value,code:$("#n-code").value};
     NF.forEach(([k])=>{const v=$("#n-"+k).value.trim();if(v!=="")b[k]=v});
-    if(!b.name){toast("Укажите адрес ТТ");$("#n-name").focus();return}
+    if(!b.name){toast("Укажите улицу и дом ТТ");$("#n-name").focus();return}
     el.disabled=true;const r=await act("POST","/api/tt",b,"ТТ создана, чек-листы заполнены по шаблону");el.disabled=false;
     if(r){S.newTT=false;dropDrafts("#n-");S.open.add(r.id);render();setTimeout(()=>document.getElementById("tt-"+r.id)?.scrollIntoView({block:"start",behavior:"smooth"}),50)}return}
   if(d.act==="journal-reload"){S.journal=null;render();return}
@@ -661,13 +809,21 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.subInput){e.preventDefault();document.querySelector(`[data-sub-upd="${e.target.dataset.subInput}"]`)?.click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.respInput){e.preventDefault();document.querySelector(`[data-resp-save="${e.target.dataset.respInput}"]`)?.click()}
   if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.esnew){e.preventDefault();document.querySelector(`[data-esadd="${e.target.dataset.esnew}"]`)?.click()}
+  const kd=e.target.dataset||{};
+  if(e.key==="Enter"&&kd.itemInput){e.preventDefault();document.querySelector(`[data-item-save="${kd.itemInput}"]`)?.click()}
+  if(e.key==="Enter"&&kd.itemNew){e.preventDefault();document.querySelector(`[data-item-add-ok="${kd.itemNew}"]`)?.click()}
+  if(e.key==="Enter"&&e.target.id==="wave-new"){e.preventDefault();document.querySelector(`[data-act="wave-add"]`)?.click()}
+  if(e.key==="Enter"&&e.target.id==="wave-ren"){e.preventDefault();document.querySelector(`[data-act="wave-ren-ok"]`)?.click()}
+  if(e.key==="Escape"&&(kd.itemInput||kd.itemNew)){document.querySelector(`[data-act="item-cancel"]`)?.click()}
+  if(e.key==="Escape"&&(e.target.id==="wave-new"||e.target.id==="wave-ren")){document.querySelector(`[data-act="wave-cancel"]`)?.click()}
   if(e.key==="Enter"&&e.target.id==="jq"){S.jq=e.target.value;S.journal=null;render()}
 });
-document.addEventListener("toggle",e=>{if(e.target.dataset&&e.target.dataset.params)S.paramsOpen=e.target.open?e.target.dataset.params:null},true);
+document.addEventListener("toggle",e=>{const d=e.target.dataset||{};if(d.params)S.paramsOpen=e.target.open?d.params:null;if(d.qp){if(e.target.open)S.qpOpen.add(d.qp);else S.qpOpen.delete(d.qp)}},true);
 document.addEventListener("input",e=>{
   if(e.target.id==="lg-fio"){const f=e.target,v=f.value,clean=v.replace(/[^A-Za-zА-Яа-яЁё\s'\-]/g,"");const msg=$("#lg-fio-err");
     if(clean!==v){const p=f.selectionStart-(v.length-clean.length);f.value=clean;f.setSelectionRange(Math.max(0,p),Math.max(0,p));msg.textContent=/\d/.test(v)?"Цифры в ФИО вводить нельзя":"В ФИО допустимы только буквы, пробел и дефис";f.classList.add("bad")}
     else{msg.textContent="";f.classList.remove("bad")}return}
+  if(e.target.id==="n-city"||e.target.id==="n-name"){newPreview();return}
   if(e.target.dataset&&e.target.dataset.tpQ){tpFilter(e.target.dataset.tpQ,e.target.value);return}if(e.target.id==="q"){S.q=e.target.value;const p=e.target.selectionStart;render();const f=$("#q");if(f){f.focus();f.setSelectionRange(p,p)}}});
 document.addEventListener("change",async e=>{
   const el=e.target,d=el.dataset;
@@ -680,7 +836,9 @@ document.addEventListener("change",async e=>{
   if(d.date){act("PATCH","/api/tt/"+d.date,{date:el.value||""},el.value?"Дата изменена, сроки подготовки пересчитаны":"Дата снята");return}
   if(d.owner){act("PATCH","/api/tt/"+d.owner,{owner:{[S.view]:el.value}});return}
   if(d.exec){act("PATCH","/api/tt/"+d.exec,{exec:{[S.view]:el.value}});return}
-  if(d.f){const [id,k]=d.f.split("|");const ty=(PF.find(x=>x[0]===k)||[])[2];act("PATCH","/api/tt/"+id,{[k]:ty==="n"?+el.value:el.value});return}
+  if(d.f){const [id,k]=d.f.split("|");const ty=(PF.find(x=>x[0]===k)||[])[2];act("PATCH","/api/tt/"+id,{[k]:ty==="bool"?el.checked:el.value},k==="wave"?"ТТ перенесена: "+waveName(el.value):null);return}
+  if(d.q){const [id,k]=d.q.split("|");const v=Math.max(0,Math.min(999,Math.round(+el.value||0)));act("PATCH","/api/tt/"+id,{[k]:v});return}
+  if(d.qauto){act("PATCH","/api/tt/"+d.qauto,{auto:el.checked},el.checked?"ККТ, терминалы, ФН и колонки считаются автоматически":"Авто-расчёт выключен — правьте количества вручную");return}
   if(d.ed){const [id,k,f]=d.ed.split("|");const L=items(id,S.view).map(x=>({...x}));let v=el.value;if(f==="d")v=Math.max(0,+v||0);else v=v.trim();if(f==="text"&&!v){render();return}L[+k][f]=v;setList(id,L);return}
   if(d.eds){const [id,k,j,f]=d.eds.split("|");const L=items(id,S.view).map(x=>({...x,sub:(x.sub||[]).map(y=>({...y}))}));const v=el.value.trim();if(f==="text"&&!v){render();return}L[+k].sub[+j][f]=v;setList(id,L);return}
   if(d.edc){const [id,k,f]=d.edc.split("|");const L=items(id,S.view).map(x=>({...x}));L[+k][f]=el.checked;setList(id,L);return}
