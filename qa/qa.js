@@ -58,10 +58,11 @@ section('2. Несколько окон, разные пользователи')
   await W.click('[data-toggle="t01"]');await W.click('[data-tick="t01|onsite|o4|"]').catch(()=>{});await W.waitForTimeout(800);
   await E.selectOption('#eng-tt','t02');await E.waitForTimeout(300);const sub=await E.$('.si [data-tick]');if(sub)await sub.click();await A.waitForTimeout(1200);
   ok(await val(A,'#ue-name')==='Мульти Окно 2','правка имени не сбросилась от действий в других окнах',await val(A,'#ue-name'));
-  ok((await A.textContent('[data-tp-count="ue"]'))==='Выбрано: 9','выбор магазинов не сбросился (5 Примерск + 4 Образцовск)',await A.textContent('[data-tp-count="ue"]'));
+  const NU=await A.evaluate(async()=>{const t=sessionStorage.getItem('kso-tok');const st=await (await fetch('/api/state',{headers:{'X-KSO-Token':t}})).json();return Object.values(st.tt).filter(x=>x.city==='Примерск'||x.city==='Образцовск').length});
+  ok((await A.textContent('[data-tp-count="ue"]'))==='Выбрано: '+NU,'выбор магазинов не сбросился (все ТТ Примерска + Образцовска: '+NU+')',await A.textContent('[data-tp-count="ue"]'));
   await A.click('[data-user-save="qa_multi"]');await A.waitForTimeout(700);
   const u=(await A.evaluate(async()=>{const t=sessionStorage.getItem('kso-tok');return (await (await fetch('/api/users',{headers:{'X-KSO-Token':t}})).json()).users})).find(x=>x.login==='qa_multi');
-  ok(u&&u.name==='Мульти Окно 2'&&u.tts.length===9,'изменения пользователя сохранены',JSON.stringify(u));
+  ok(u&&u.name==='Мульти Окно 2'&&u.tts.length===NU,'изменения пользователя сохранены',JSON.stringify(u));
   // второе окно админа видит нового пользователя без перезагрузки
   const A2=await c.newPage();watch(A2,'A2');await loginUI(A2,'Admin','admin');await A2.click('[data-view=users]');await A2.waitForSelector('#nu-login');
   await A.click('[data-user-edit="qa_multi"]');await A.waitForSelector('#ue-name');await A.fill('#ue-name','Мульти Окно 3');await A.click('[data-user-save="qa_multi"]');await A2.waitForTimeout(1500);
