@@ -313,7 +313,7 @@ setInterval(()=>{if(S.me)reload().catch(()=>setOffline(true))},30000);
 
 /* ---------- вычисления ---------- */
 const role=()=>S.me&&S.me.role;
-const isAdmin=()=>role()==="admin",isLead=()=>role()==="lead",isEng=()=>role()==="engineer";
+const isAdmin=()=>role()==="admin",isLead=()=>role()==="lead",isEng=()=>role()==="engineer",isViewer=()=>role()==="viewer";
 function items(id,sec){return ((S.LISTS[id]||{})[sec])||[]}
 function chk(id,sec,iid){return (((S.CHECKS[id]||{})[sec])||{})[iid]||{st:"none"}}
 const ckey=(iid,sid)=>sid?iid+"~"+sid:iid;
@@ -384,6 +384,7 @@ function loginView(){
     <label>Пароль<input type="password" id="lg-pass" autocomplete="current-password"></label>
     <label class="chk"><input type="checkbox" id="lg-rem"> Запомнить меня на этом устройстве (72 часа)</label>
     <div class="err" id="lg-err"></div>
+    <div class="sub">Демо-вход: <b>Admin</b> / admin · <b>Viewer</b> / viewer (только просмотр). Все данные вымышленные.</div>
     <button class="btn pri" type="submit" style="padding:11px;justify-content:center">Войти</button>
     <div class="or">или</div>
     <label>Инженер: фамилия и имя<span class="row"><input type="text" id="lg-fio" placeholder="Например, Петров Иван" autocomplete="name" maxlength="60"><button class="btn" type="button" id="lg-eng">Войти как инженер</button></span></label>
@@ -437,6 +438,7 @@ function mainView(){
     <button class="btn" data-act="expand">${S.open.size?"Свернуть все":"Развернуть все"}</button>
     ${isAdmin()?`<button class="btn pri" data-act="new-tt">Добавить ТТ</button>`:""}${S.view==="onsite"&&S.wikiRoot?`<a class="wiki" href="${esc(S.wikiRoot)}" target="_blank" rel="noopener">📘 Инструкции CSI-K V3</a>`:""}</div>
     ${S.newTT?newTTView():""}
+    ${isViewer()?`<div class="notice">Режим просмотра: можно открывать чек-листы, календарь и сводку, выгружать Excel. Отмечать и менять ничего нельзя.</div>`:""}
     ${isAdmin()&&pend?`<div class="notice">На проверке у старшего: ${pend} ${plural(pend,"отметка","отметки","отметок")} инженеров.</div>`:""}
     <div class="sub" style="margin-bottom:8px">${list.length} ТТ · ${S.wave==="all"?"все волны":esc(waveName(S.wave))}${S.limited?" · показаны только назначенные вам ТТ":""} · сортировка по дате работ</div>
     <div class="tts">${list.map(id=>ttView(id)).join("")||`<div class="empty">Ничего не найдено.</div>`}</div>`;
@@ -468,7 +470,7 @@ function ttBody(id){
   let h=`<div class="ttb">`;
   if(!isEng())h+=`<div class="bar-row">
       <label>Ответственный (назначает администратор)${isAdmin()?`<input type="text" list="names" value="${esc(owner)}" data-owner="${id}" placeholder="ФИО">`:`<span style="padding:7px 0">${esc(owner||"не назначен")}</span>`}</label>
-      <label>Исполнитель (назначает старший)<input type="text" list="names" value="${esc(ex)}" data-exec="${id}" placeholder="ФИО"></label>
+      <label>Исполнитель (назначает старший)${isViewer()?`<span style="padding:7px 0">${esc(ex||"не назначен")}</span>`:`<input type="text" list="names" value="${esc(ex)}" data-exec="${id}" placeholder="ФИО">`}</label>
       <a class="btn" href="${esc(au(`/api/export/${id}/${sec}`))}" download>Выгрузить в Excel</a>
      </div><datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`;
   if(isAdmin()&&S.view==="prep"){const ppl=[...new Set([...S.people,...Object.values(S.TT).flatMap(x=>[x.owner?.prep,x.owner?.onsite,x.exec?.prep,x.exec?.onsite]),...Object.values(S.LISTS).flatMap(l=>(l.prep||[]).map(i=>i.resp))].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
@@ -515,19 +517,19 @@ function paramsView(id){
 function stLine(id,sec,key,c){
   let st="";
   if(c.st==="done")st=`<span class="ok">✓ ${esc(c.by)}${c.role==="engineer"?" (инженер)":""} · ${esc(c.at)}</span>${c.cby?`<span class="ok">подтвердил ${esc(c.cby)} · ${esc(c.cat)}</span>`:""}`;
-  else if(c.st==="pending")st=`<span class="pd">На проверке у старшего · отметил ${esc(c.by)} · ${esc(c.at)}</span>${!isEng()?`<button class="btn sm ok" data-confirm="${key}">Подтвердить</button><button class="btn sm no" data-reject="${key}">Отклонить</button>`:""}`;
+  else if(c.st==="pending")st=`<span class="pd">На проверке у старшего · отметил ${esc(c.by)} · ${esc(c.at)}</span>${isAdmin()||isLead()?`<button class="btn sm ok" data-confirm="${key}">Подтвердить</button><button class="btn sm no" data-reject="${key}">Отклонить</button>`:""}`;
   else if(c.st==="rejected")st=`<span class="rj">Отклонено: ${esc(c.cby)} · ${esc(c.cat)}${c.note?" — "+esc(c.note):""}</span>`;
   return st;
 }
-function canTick(c){return !(isEng()&&(c.st==="done"||(c.st==="pending"&&c.by!==S.me.name)))}
+function canTick(c){if(isViewer())return false;return !(isEng()&&(c.st==="done"||(c.st==="pending"&&c.by!==S.me.name)))}
 function rejectBox(key){return S.rejecting===key?`<div class="tools"><input type="text" id="rej-note" placeholder="Причина (необязательно)" style="flex:1 1 200px"><button class="btn sm no" data-reject-ok="${key}">Отклонить</button><button class="btn sm" data-act="cancel-reject">Отмена</button></div>`:""}
 function cmtBtn(id,sec,ck,key){const n=comments(id,sec,ck).length,open=S.cmtOpen.has(key);return `<button class="ico ${open?"on":""}" data-cmt="${key}">💬 ${n?n:""} ${n?"":"Комментировать"}</button>`}
 function cmtBox(id,sec,ck,key){
   if(!S.cmtOpen.has(key))return "";
   const L=comments(id,sec,ck);
   return `<div class="cm">${L.map(c=>`<div class="c"><div class="h"><b style="color:var(--fg)">${esc(c.by)}</b><span>${esc(ROLE[c.role]||"")}</span><span>${esc(c.at)}</span>${(isAdmin()||(c.by===S.me.name&&c.role===S.me.role))?`<button class="ico" data-cmt-del="${id}|${c.id}" aria-label="Удалить комментарий">✕</button>`:""}</div>${esc(c.text)}</div>`).join("")||`<div class="sub">Комментариев пока нет.</div>`}
-    <textarea data-cmt-input="${key}" placeholder="Комментарий для всех: что сделано, что мешает, что уточнить"></textarea>
-    <div><button class="btn sm pri" data-cmt-send="${key}">Отправить</button></div></div>`;
+    ${isViewer()?"":`<textarea data-cmt-input="${key}" placeholder="Комментарий для всех: что сделано, что мешает, что уточнить"></textarea>
+    <div><button class="btn sm pri" data-cmt-send="${key}">Отправить</button></div>`}</div>`;
 }
 const canSub=()=>isAdmin()||isLead();
 function checkList(id){
@@ -559,7 +561,7 @@ function checkList(id){
       <div class="st">${due?`<span class="due ${over?"over":""}">срок ${fd(due)}${over?" · просрочено":""}</span>`:""}${sec==="prep"&&i.resp?`<span>Доп. ответственный: <b class="resp">${esc(i.resp)}</b></span>`:""}${i.who?`<span>Уточнять: <b>${esc(i.who)}</b></span>`:""}${hasSub?`<span class="${on?"ok":""}">подзадачи ${subDone}/${i.sub.length}</span>`:stLine(id,sec,key,c)}</div>
       ${hasSub?"":rejectBox(key)}
       ${pics.length?`<div class="thumbs">${pics.map(p=>`<button class="thumb" data-photo="${p.id}" aria-label="Фото от ${esc(p.by)}"><img src="${esc(au("/photos/"+p.id))}" alt="" loading="lazy"><span>${esc(p.by)}</span></button>`).join("")}</div>`:""}
-      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&S.itemEdit!==key?`<button class="ico" data-item-edit="${key}" aria-label="Изменить пункт" title="Изменить пункт">✎</button>`:""}${isAdmin()?(S.itemDel===key?`<button class="ico danger" data-item-del="${key}">Удалить пункт${hasSub?" с подпунктами":""}?</button>`:`<button class="ico" data-item-delask="${key}" aria-label="Удалить пункт" title="Удалить пункт">✕</button>`):""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
+      <div class="tools">${i.link?`<a class="ico" href="${esc(i.link)}" target="_blank" rel="noopener">📘 Инструкция</a>`:""}${cmtBtn(id,sec,i.id,key)}${isViewer()?"":`<label class="ico">📷 ${i.ph&&!pics.length?"Нужно фото":"Фото"}<input type="file" accept="image/*" data-upload="${id}|${sec}|${i.id}" hidden></label>`}${canSub()&&S.subAdd!==key?`<button class="ico" data-sub-add="${key}">＋ Подзадача</button>`:""}${isAdmin()&&S.itemEdit!==key?`<button class="ico" data-item-edit="${key}" aria-label="Изменить пункт" title="Изменить пункт">✎</button>`:""}${isAdmin()?(S.itemDel===key?`<button class="ico danger" data-item-del="${key}">Удалить пункт${hasSub?" с подпунктами":""}?</button>`:`<button class="ico" data-item-delask="${key}" aria-label="Удалить пункт" title="Удалить пункт">✕</button>`):""}${isAdmin()&&sec==="prep"&&S.respEdit!==key?`<button class="ico" data-resp-edit="${key}">👤 ${i.resp?"Сменить ответственного":"Доп. ответственный"}</button>`:""}</div>
       ${isAdmin()&&sec==="prep"&&S.respEdit===key?`<div class="tools"><input type="text" list="people-list" data-resp-input="${key}" value="${esc(i.resp||"")}" placeholder="ФИО: впишите или выберите из списка" style="flex:1 1 240px"><button class="btn sm pri" data-resp-save="${key}">Сохранить</button>${i.resp?`<button class="btn sm no" data-resp-clear="${key}">Убрать</button>`:""}<button class="btn sm" data-act="resp-cancel">Отмена</button></div>`:""}
       ${cmtBox(id,sec,i.id,key)}
       ${subsHtml}
@@ -647,7 +649,7 @@ function tpSync(scope){
   const n=document.querySelectorAll(`[data-tp="${scope}"]:checked`).length;const c=document.querySelector(`[data-tp-count="${scope}"]`);if(c)c.textContent="Выбрано: "+n;
   document.querySelectorAll(`[data-tp-city^="${scope}|"]`).forEach(cb=>{const box=cb.closest(".tp-city");const items=[...box.querySelectorAll(`[data-tp="${scope}"]`)];cb.checked=items.length&&items.every(x=>x.checked);cb.indeterminate=!cb.checked&&items.some(x=>x.checked)});
 }
-function ttLabel(u){if(u.role==="admin")return `<span class="sub">все (админ)</span>`;if(!u.tts)return "Все ТТ";
+function ttLabel(u){if(u.role==="admin")return `<span class="sub">все (админ)</span>`;if(u.role==="viewer")return `<span class="sub">все (только просмотр)</span>`;if(!u.tts)return "Все ТТ";
   const names=u.tts.map(id=>S.TT[id]?S.TT[id].city+", "+S.TT[id].name:"").filter(Boolean);return `<span title="${esc(names.join("\n"))}">${u.tts.length} ${plural(u.tts.length,"ТТ","ТТ","ТТ")}</span>${u.tts.length?"":` <span class="badge bad">не видит ни одной</span>`}`}
 function usersView(){
   if(!S.users){loadUsers();return `<div class="empty">Загружаю…</div>`}
@@ -656,7 +658,7 @@ function usersView(){
    <div class="panel scroll"><table><thead><tr><th>Логин</th><th>Имя</th><th>Роль</th><th>ТТ</th><th>Статус</th><th></th></tr></thead><tbody>
    ${S.users.map(u=>{const ed=S.userEdit===u.login;return `<tr><td class="num">${esc(u.login)}</td>
      <td>${ed?`<input type="text" id="ue-name" autocomplete="off" value="${esc(u.name)}">`:esc(u.name)}</td>
-     <td>${ed?`<select id="ue-role"><option value="lead" ${u.role==="lead"?"selected":""}>Старший</option><option value="admin" ${u.role==="admin"?"selected":""}>Администратор</option></select>`:ROLE[u.role]}</td>
+     <td>${ed?`<select id="ue-role"><option value="lead" ${u.role==="lead"?"selected":""}>Старший</option><option value="admin" ${u.role==="admin"?"selected":""}>Администратор</option><option value="viewer" ${u.role==="viewer"?"selected":""}>Наблюдатель</option></select>`:ROLE[u.role]}</td>
      <td>${ttLabel(u)}</td>
      <td>${u.active?'<span class="badge" style="background:var(--ok-soft);color:var(--ok)">активен</span>':'<span class="badge bad">отключён</span>'}</td>
      <td style="white-space:nowrap">${ed?`<input type="password" id="ue-pass" autocomplete="new-password" placeholder="Новый пароль (не менять — пусто)" style="width:220px"> <button class="btn sm pri" data-user-save="${esc(u.login)}">Сохранить</button> <button class="btn sm" data-act="user-cancel">Отмена</button>`:
@@ -665,7 +667,7 @@ function usersView(){
    </tbody></table></div>
    <div class="pick" style="margin-top:14px"><b>Новый пользователь</b>
     <div class="bar-row"><label>Логин (латиница)<input type="text" id="nu-login" autocomplete="off" autocapitalize="off" spellcheck="false"></label><label>Имя<input type="text" id="nu-name" autocomplete="off"></label><label>Пароль<input type="password" id="nu-pass" autocomplete="new-password"></label>
-     <label>Роль<select id="nu-role"><option value="lead">Старший</option><option value="admin">Администратор</option></select></label><button class="btn pri" data-act="user-add">Добавить</button></div>
+     <label>Роль<select id="nu-role"><option value="lead">Старший</option><option value="admin">Администратор</option><option value="viewer">Наблюдатель (только просмотр)</option></select></label><button class="btn pri" data-act="user-add">Добавить</button></div>
     <div id="nu-tpwrap"><b>ТТ, которые будет видеть старший</b>${ttPicker("nu",null)}</div>
     <div class="sub">Инженерам учётные записи не нужны: они входят по фамилии и имени. Администратор видит все ТТ.</div></div>`;
 }
