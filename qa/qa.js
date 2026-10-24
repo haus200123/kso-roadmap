@@ -11,7 +11,9 @@ async function tokenFor(login,pw){const r=await apiAs(null,'POST','/api/login',{
 async function engToken(name){const r=await apiAs(null,'POST','/api/login-engineer',{name});return r.j.token}
 
 (async()=>{
-await start();const b=await chromium.launch();const consoleErrs=[];
+await start();
+/* в демо-версии по умолчанию только Admin и Viewer — старшего для проверок создаём сами */
+await apiAs(await tokenFor('Admin','admin'),'POST','/api/users',{login:'ITlead',name:'Старший сотрудник',password:'lead',role:'lead',tts:'all'});const b=await chromium.launch();const consoleErrs=[];
 const newCtx=async(opts={})=>{const c=await b.newContext({viewport:{width:1300,height:900},...opts});return c};
 const watch=(p,label)=>{p.on('pageerror',e=>consoleErrs.push(label+': '+e.message));p.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource.*(401|403|ERR_INCOMPLETE_CHUNKED_ENCODING|ERR_CONNECTION_REFUSED)/.test(m.text()))consoleErrs.push(label+' console: '+m.text())})};
 const loginUI=async(p,l,pw,rem)=>{await p.goto(B);await p.waitForSelector('#lg-login');await p.fill('#lg-login',l);await p.fill('#lg-pass',pw);if(rem)await p.check('#lg-rem');await p.click('button[type=submit]');await p.waitForSelector('.tt',{timeout:8000})};
@@ -231,7 +233,7 @@ section('8. Удаление и редактирование');
 /* ===== 7. Все экраны всех ролей без ошибок ===== */
 section('7. Экраны, телефон, тёмная тема');
 for(const [w,h,cs] of [[1300,900,'light'],[390,844,'dark']]){
-  for(const [l,pw] of [['Admin','admin'],['ITlead','lead'],[null,null]]){
+  for(const [l,pw] of [['Admin','admin'],['ITlead','lead'],['Viewer','viewer'],[null,null]]){
     const c=await newCtx({viewport:{width:w,height:h},colorScheme:cs});const p=await c.newPage();const label=(l||'инженер')+' '+w;watch(p,label);
     if(l)await loginUI(p,l,pw);else{await p.goto(B);await p.fill('#lg-fio','Экранов Инженер');await p.click('#lg-eng');await p.waitForSelector('#eng-tt');await p.selectOption('#eng-tt','t01');await p.waitForTimeout(300)}
     const tabs=await p.$$eval('[data-view]',x=>x.map(e=>e.dataset.view));

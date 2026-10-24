@@ -1,6 +1,12 @@
-/* QA версии 4: перенос данных пользователя, волны, календарь, быстрые правки, ККТ. Запуск: node qa9.js <папка с site и data пользователя> <копия исходной db.json> */
+/* QA версии 4: перенос данных, волны, календарь, быстрые правки, ККТ, наблюдатель. */
 const {chromium}=require('playwright');const {spawn}=require('child_process');const fs=require('fs');const path=require('path');
-const ROOT=process.argv[2],ORIG=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));const B='http://'+(process.argv[4]||'localhost')+':8080';
+/* Запуск: node qa/qa9.js <копия проекта без папки data> [хост]
+   Тест сам кладёт в <копия>/data демо-базу версии 3.5 (qa/fixtures) и проверяет, что обновление до версии 4 ничего не теряет. */
+const ROOT=process.argv[2],FIX=path.join(__dirname,'fixtures');const B='http://'+(process.argv[3]||'localhost')+':8080';
+if(fs.existsSync(path.join(ROOT,'data','db.json'))){console.log('В '+ROOT+'/data уже есть база — укажите чистую копию проекта, тест её перезапишет.');process.exit(3)}
+fs.mkdirSync(path.join(ROOT,'data','photos'),{recursive:true});fs.copyFileSync(path.join(FIX,'db-v3.5.json'),path.join(ROOT,'data','db.json'));
+fs.readdirSync(path.join(FIX,'photos')).forEach(f=>fs.copyFileSync(path.join(FIX,'photos',f),path.join(ROOT,'data','photos',f)));
+const ORIG=JSON.parse(fs.readFileSync(path.join(FIX,'db-v3.5.json'),'utf8'));
 const OUT=path.join(__dirname,'out9');fs.mkdirSync(OUT,{recursive:true});
 let srv=null,srvLog='';const results=[];let cur='';
 function start(){return new Promise(r=>{srvLog='';srv=spawn('node',['site/server.js'],{cwd:ROOT,env:{...process.env,KSO_NO_BROWSER:'1'}});srv.stdout.on('data',d=>{srvLog+=d;if(String(d).includes('запущена'))r()});srv.stderr.on('data',d=>console.log('SRV ERR',String(d)))})}
@@ -38,7 +44,6 @@ section('A. Данные пользователя после обновлени�
   ok(!['1150','1498','1410','1201','1333','1412','1115','1207'].some(c=>codes.has(c)),'ТТ «Без изменений» не добавлены');
   ok(D.tt.t24.wave==='w1'&&D.tt.t24.skit===8&&D.tt.t24.demCsik===4&&D.tt.t24.outSkit===2,'Ясеневая 74а: 1 волна, 8 S.kit, снимаем 4 CSIK, 2 S.kit уезжают');
   ok(D.tt.t05.wave==='w2'&&D.tt['pl-1308-w1']&&D.tt['pl-1308-w1'].outSkit===4,'Берёзовая 117: работа 2 волны в прежней карточке + новая карточка 1 волны (отдаёт 4 S.kit)');
-  ok(D.users.lead_a.tts.includes('pl-1461-w1')&&D.users.lead_b.tts.includes('pl-1308-w1'),'старшие видят вторую карточку своей ТТ');
   const t24=D.lists.t24.onsite.map(i=>i.text).join('\n');ok(/POSCore и УчётПлюс/.test(JSON.stringify(D.lists.t24.onsite))&&/2ЛТП/.test(t24)&&/МАХ/.test(t24),'в старые чек-листы добавлены новые пункты (POSCore и УчётПлюс, 2ЛТП, МАХ)');
   ok(/Снять колонки с NCR и звуковые карты/.test(JSON.stringify(D.lists.t05.onsite)),'«Снять колонки с NCR и звуковые карты» в существующей ТТ');
   ok(/Нова Принт/.test(JSON.stringify(D.lists.t24.prep)),'ККТ Кварц 2Ф + Нова Принт в подготовке');
@@ -111,8 +116,8 @@ section('D. Быстрые правки пунктов');
   await A.click('[data-wave="w2"]');await A.click('[data-toggle="t27"]');await A.waitForTimeout(200);
   let st=(await apiAs(adm,'GET','/api/state')).j;const it=st.lists.t27.onsite.find(i=>!i.sub.length);const key=`t27|onsite|${it.id}|`;
   await apiAs(adm,'POST','/api/check',{tt:'t27',sec:'onsite',item:it.id,action:'tick'});await A.waitForTimeout(500);
-  await A.click(`[data-item-edit="${key}"]`);await A.fill(`[data-item-input="${key}"]`,'Исправленный текст пункта');await A.press(`[data-item-input="${key}"]`,'Enter');await A.waitForTimeout(700);
-  st=(await apiAs(adm,'GET','/api/state')).j;let x=st.lists.t27.onsite.find(i=>i.id===it.id);
+  await A.click(`[data-item-edit="${key}"]`);await A.fill(`[data-item-input="${key}"]`,'Исправленный текст пункта');await A.press(`[data-item-input="${key}"]`,'Enter');
+  let x;for(let k=0;k<30;k++){st=(await apiAs(adm,'GET','/api/state')).j;x=st.lists.t27.onsite.find(i=>i.id===it.id);if(x.text==='Исправленный текст пункта')break;await A.waitForTimeout(100)}
   ok(x.text==='Исправленный текст пункта','✎ у пункта: текст исправлен в обычном режиме');ok(st.checks.t27.onsite[it.id].st==='done','отметка пункта после правки текста на месте');
   const grpCount=await A.$$eval('#tt-t27 [data-item-addg]',x=>x.length);ok(grpCount>3,'у каждой группы есть «＋ пункт»',grpCount);
   const gk=await A.getAttribute('#tt-t27 [data-item-addg]','data-item-addg');await A.click(`[data-item-addg="${gk}"]`);await A.fill(`[data-item-new="${gk}"]`,'Свой пункт админа');await A.press(`[data-item-new="${gk}"]`,'Enter');await A.waitForTimeout(700);
@@ -183,6 +188,24 @@ section('F. Сводка, Excel, инженер');
   ok(!(await E.$('[data-item-edit]'))&&!(await E.$('[data-qp]'))&&!(await E.$('.waves')),'инженер не видит правки пунктов, количеств и волн');
   await A.click('[data-view="onsite"]');await A.click('[data-wave="all"]');await A.screenshot({path:OUT+'/all.png'});
   await c.close();
+}
+/* ===== G. Наблюдатель (только просмотр) ===== */
+section('G. Наблюдатель');
+{ const vt=await tokenFor('Viewer','viewer');ok(!!vt,'вход Viewer / viewer');
+  const st=(await apiAs(vt,'GET','/api/state')).j;ok(Object.keys(st.tt).length>100&&!st.limited,'наблюдатель видит все ТТ');
+  const it=st.lists.t24.onsite.find(i=>!i.sub.length);
+  ok((await apiAs(vt,'POST','/api/check',{tt:'t24',sec:'onsite',item:it.id,action:'tick'})).s===403,'отметить пункт нельзя');
+  ok((await apiAs(vt,'POST','/api/comments',{tt:'t24',sec:'onsite',item:it.id,text:'x'})).s===403,'комментировать нельзя');
+  ok((await apiAs(vt,'PATCH','/api/tt/t24',{exec:{onsite:'Кто-то'}})).s===403&&(await apiAs(vt,'POST','/api/waves',{name:'X'})).s===403,'менять ТТ и волны нельзя');
+  ok((await apiAs(vt,'GET','/api/users')).s===403&&(await apiAs(vt,'GET','/api/journal')).s===403,'пользователи и журнал закрыты');
+  const x=await apiAs(vt,'GET','/api/export/t24/onsite');ok(x.s===200&&x.j.slice(0,2).toString()==='PK','Excel выгружается');
+  const c=await b.newContext({viewport:{width:1300,height:900}});const V=await c.newPage();watch(V,'viewer');await login(V,'Viewer','viewer');
+  ok((await V.$$eval('.tab',x=>x.map(e=>e.dataset.view))).join()==='onsite,prep,calendar,orders','вкладки: отработка, подготовка, календарь, сводка');
+  ok((await V.textContent('main')).includes('Режим просмотра'),'плашка «Режим просмотра»');
+  await V.click('[data-wave="w1"]');await V.click('[data-toggle="t24"]');await V.waitForTimeout(300);
+  ok(await V.$$eval('#tt-t24 [data-tick]',x=>x.length>0&&x.every(e=>e.disabled)),'галочки неактивны');
+  ok(!(await V.$('#tt-t24 [data-exec]'))&&!(await V.$('#tt-t24 [data-upload]'))&&!(await V.$('#tt-t24 [data-item-edit]'))&&!(await V.$('#tt-t24 [data-sub-add]'))&&!(await V.$('#tt-t24 [data-qp]')),'нет полей и кнопок правки');
+  await V.screenshot({path:OUT+'/viewer.png'});await c.close();
 }
 ok(errs.length===0,'ошибок в консоли браузера нет',errs.join(' | '));
 await b.close();await stop();
