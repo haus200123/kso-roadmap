@@ -33,7 +33,7 @@ function loadDB(){
     const seed=JSON.parse(fs.readFileSync(path.join(SITE,"seed.json"),"utf8"));
     DB={v:1,tt:seed.tt,lists:seed.lists,checks:seed.checks,photos:{},users:{}};
     const mk=(login,name,role,p)=>{DB.users[login.toLowerCase()]={login,name,role,active:true,...hashPass(p)}};
-    mk("Admin","Администратор","admin","admin");mk("ITlead","Старший сотрудник","lead","lead");
+    mk("Admin","Администратор","admin","admin");mk("Viewer","Наблюдатель","viewer","viewer");
     saveDB();console.log("Создана новая база данных: data\\db.json");
   }
   DB.photos=DB.photos||{};DB.users=DB.users||{};DB.comments=DB.comments||{};DB.checks=DB.checks||{};DB.lists=DB.lists||{};DB.removed=DB.removed||{};DB.waves=DB.waves||[];
@@ -209,6 +209,8 @@ async function handle(req,res){
   if(M==="POST"&&p==="/api/logout"){const t=tokOf(req);if(s)journal(req,s,"Выход");if(t&&SESS[t]){delete SESS[t];saveSess()}return send(res,200,{ok:true},cookies(req).kso_sid===t?CLEAR_COOKIE:{})}
   if(M==="GET"&&p==="/api/me")return send(res,200,s?{role:s.role,name:s.name,login:s.login||""}:{role:null});
   if(!s)return err(res,401,"Войдите заново");
+  /* наблюдатель только смотрит и выгружает Excel */
+  if(s.role==="viewer"&&M!=="GET")return err(res,403,"Режим просмотра: изменения недоступны");
   const isA=s.role==="admin",isL=s.role==="lead",isE=s.role==="engineer";
   const canTT=id=>!isL||!s.tts||s.tts.includes(id);
   const noTT=()=>err(res,403,"Эта ТТ вам не назначена");
@@ -407,11 +409,11 @@ async function handle(req,res){
     if(M==="GET")return send(res,200,{users:Object.values(DB.users).map(pub)});
     const b=await body(req,1e4);
     if(M==="POST"){const login=String(b.login||"").trim();if(!/^[\w.-]{3,32}$/.test(login))return err(res,400,"Логин: 3–32 латинских буквы или цифры");if(DB.users[login.toLowerCase()])return err(res,409,"Такой логин уже есть");
-      if(String(b.password||"").length<4)return err(res,400,"Пароль не короче 4 символов");if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");
+      if(String(b.password||"").length<4)return err(res,400,"Пароль не короче 4 символов");if(!["admin","lead","viewer"].includes(b.role))return err(res,400,"Неверная роль");
       DB.users[login.toLowerCase()]={login,name:String(b.name||login).trim().slice(0,80),role:b.role,active:true,tts:b.role==="lead"?cleanTts(b.tts):null,...hashPass(b.password)};commit();journal(req,s,"Создан пользователь",{details:login+" · "+K.ROLE[b.role]+(b.role==="lead"&&Array.isArray(b.tts)?" · ТТ: "+cleanTts(b.tts).length:"")});return send(res,200,{ok:true})}
     if(M==="PATCH"&&(mm=p.match(/^\/api\/users\/([\w.-]+)$/))){const x=DB.users[mm[1].toLowerCase()];if(!x)return err(res,404,"Нет пользователя");
       const admins=Object.values(DB.users).filter(y=>y.role==="admin"&&y.active);const self=x.login===s.login;const ch=[];
-      if(b.role&&b.role!==x.role){if(!["admin","lead"].includes(b.role))return err(res,400,"Неверная роль");if(x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя убрать последнего администратора");x.role=b.role;ch.push("роль: "+K.ROLE[b.role])}
+      if(b.role&&b.role!==x.role){if(!["admin","lead","viewer"].includes(b.role))return err(res,400,"Неверная роль");if(x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя убрать последнего администратора");x.role=b.role;ch.push("роль: "+K.ROLE[b.role])}
       if(typeof b.active==="boolean"&&b.active!==x.active){if(self)return err(res,409,"Нельзя отключить себя");if(!b.active&&x.role==="admin"&&admins.length<2)return err(res,409,"Нельзя отключить последнего администратора");x.active=b.active;ch.push(b.active?"включён":"отключён");
         if(!b.active)Object.keys(SESS).forEach(k=>{if(SESS[k].login===x.login)delete SESS[k]})}
       if(typeof b.name==="string"&&b.name.trim()&&b.name.trim()!==x.name){x.name=b.name.trim().slice(0,80);ch.push("имя: "+x.name)}
